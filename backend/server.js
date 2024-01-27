@@ -3,8 +3,10 @@ require("dotenv").config();
 const express = require('express')
 const app = express();
 const port = process.env.PORT || 5000
-const {urlencoded} = require('body-parser')
+const {urlencoded} = require('body-parser');
+const connectDB = require("./config/db");
 
+connectDB();
 
 app.use(express.json())
 app.use(urlencoded({extended: true}))
