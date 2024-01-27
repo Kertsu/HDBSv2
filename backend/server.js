@@ -5,9 +5,25 @@ const app = express();
 const port = process.env.PORT || 5000
 const {urlencoded} = require('body-parser');
 const connectDB = require("./config/db");
-const { multerUploads } = require("./middlewares/multer");
+
+const http = require('http');
+const WebSocket = require('ws')
+
+const server = http.createServer(app);
+const wss = new WebSocket.Server({server});
+
+wss.on('connection', (ws) => {
+    ws.on('message', (message)=> {
+        console.log('received message: ' + message)
+    })
+})
+
 
 connectDB();
+
+server.listen(3000, () => {
+    console.log('Server started on port 3000');
+})
 
 app.use(express.json())
 app.use(urlencoded({extended: true}))
