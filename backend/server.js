@@ -45,7 +45,7 @@ app.use(urlencoded({ extended: true }));
 app.use("/api/users", require("./routes/userRoutes"));
 
 server.listen(port, () => {
-  console.log(`Amazing Zlatko Method™ combo server on 80`);
+  console.log(`Server is listening on port ${port}`);
 });
 
 // app.listen(port, () => {
