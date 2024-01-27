@@ -1,4 +1,5 @@
-const { register, authenticate } = require('../controllers/userController')
+const { register, authenticate, getSelf } = require('../controllers/userController')
+const { protect } = require('../middlewares/authMiddleware')
 
 const router = require('express').Router()
 
@@ -7,6 +8,10 @@ router.post('/register', register)
 
 // Authenticate user
 router.post('/login', authenticate)
+
+// Get self
+router.get('/self', protect, getSelf)
+
 
 /**
  * @todo
@@ -18,10 +23,6 @@ router.post('/login', authenticate)
  * Update user
  */
 
-/**
- * @todo
- * Get self
- */
 
 /**
  * @todo

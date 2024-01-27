@@ -4,6 +4,9 @@ const bcrypt = require("bcryptjs");
 
 const User = require("../models/userModel");
 
+/**
+ * Register a user
+ */
 const register = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
@@ -53,6 +56,9 @@ const register = asyncHandler(async (req, res) => {
   }
 });
 
+/**
+ * Login
+ */
 const authenticate = asyncHandler(async (req, res) => {
     const { username, email, password } = req.body;
   
@@ -87,6 +93,19 @@ const authenticate = asyncHandler(async (req, res) => {
     }
   });
   
+/**
+ * Get self
+ */
+const getSelf = asyncHandler(async(req, res) => {
+    const {id, username, email, role, avatar} = await User.findById(req.user.id);
+
+    res.status(200).json({
+        message: "Sucess",
+        user: {
+            id, username, email, role, avatar
+        }
+    })
+})
 
 const isValidEmail = (email) => {
   const emailRegex = /@(student\.laverdad\.edu\.ph|laverdad\.edu\.ph)$/i;
@@ -106,4 +125,4 @@ const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "1d" });
 };
 
-module.exports = { register, authenticate};
+module.exports = { register, authenticate, getSelf};
