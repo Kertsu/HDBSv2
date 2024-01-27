@@ -1,5 +1,6 @@
-const { register, authenticate, getSelf, deleteUser } = require('../controllers/userController')
+const { register, authenticate, getSelf, deleteUser, uploadAvatar } = require('../controllers/userController')
 const { protect, isAdmin } = require('../middlewares/authMiddleware')
+const upload = require('../middlewares/multer')
 
 const router = require('express').Router()
 
@@ -15,11 +16,8 @@ router.get('/self', protect, getSelf)
 // Delete user
 router.delete('/delete/:id', isAdmin, deleteUser)
 
-
-/**
- * @todo
- * Delete user
- */
+// Upload avatar
+router.put('/self/avatar', protect, upload.single('avatar'), uploadAvatar )
 
 /**
  * @todo
