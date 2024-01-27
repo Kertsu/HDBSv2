@@ -1,4 +1,4 @@
-const { register, authenticate, getSelf } = require('../controllers/userController')
+const { register, authenticate, getSelf, deleteUser } = require('../controllers/userController')
 const { protect, isAdmin } = require('../middlewares/authMiddleware')
 
 const router = require('express').Router()
@@ -11,6 +11,9 @@ router.post('/login', authenticate)
 
 // Get self
 router.get('/self', protect, getSelf)
+
+// Delete user
+router.delete('/delete/:id', isAdmin, deleteUser)
 
 
 /**

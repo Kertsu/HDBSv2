@@ -60,72 +60,94 @@ const register = asyncHandler(async (req, res) => {
  * Login
  */
 const authenticate = asyncHandler(async (req, res) => {
-    const { username, email, password } = req.body;
-  
-    const userByEmail = await User.findOne({ email });
-    const userByUsername = await User.findOne({ username });
-  
-    if (!userByEmail && !userByUsername) {
-      return res.status(400).json({ error: "Invalid credentials" });
+  const { username, email, password } = req.body;
+
+  const userByEmail = await User.findOne({ email });
+  const userByUsername = await User.findOne({ username });
+
+  if (!userByEmail && !userByUsername) {
+    return res.status(400).json({ error: "Invalid credentials" });
+  }
+
+  const user = userByEmail || userByUsername;
+
+  if (await bcrypt.compare(password, user.password)) {
+    if (user.isDisabled) {
+      return res.status(400).json({ error: "Your account is suspended" });
     }
-  
-    const user = userByEmail || userByUsername;
-  
-    if (await bcrypt.compare(password, user.password)) {
-      if (user.isDisabled) {
-        return res.status(400).json({ error: "Your account is suspended" });
-      }
-  
-      const userData = {
-        id: user.id,
-        role: user.role,
-        username: user.username,
-        email: user.email,
-        token: generateToken(user.id),
-      };
-  
-      res.status(200).json({
-        message: "success",
-        user: userData,
-      });
-    } else {
-      res.status(400).json({ error: "Invalid credentials" });
-    }
-  });
-  
+
+    const userData = {
+      id: user.id,
+      role: user.role,
+      username: user.username,
+      email: user.email,
+      token: generateToken(user.id),
+    };
+
+    res.status(200).json({
+      message: "success",
+      user: userData,
+    });
+  } else {
+    res.status(400).json({ error: "Invalid credentials" });
+  }
+});
+
 /**
  * Get self
  */
-const getSelf = asyncHandler(async(req, res) => {
-    const {id, username, email, role, avatar} = await User.findById(req.user.id);
+const getSelf = asyncHandler(async (req, res) => {
+  const { id, username, email, role, avatar } = await User.findById(
+    req.user.id
+  );
 
-    res.status(200).json({
-        message: "Sucess",
-        user: {
-            id, username, email, role, avatar
-        }
-    })
-})
+  res.status(200).json({
+    message: "Sucess",
+    user: {
+      id,
+      username,
+      email,
+      role,
+      avatar,
+    },
+  });
+});
 
+/**
+ * Delete a user
+ */
+const deleteUser = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.params.id);
 
+  if (!user) {
+    res.status(400);
+    throw new Error("User not found");
+  }
 
-module.exports = { register, authenticate, getSelf};
+  if (req.params.id !== req.user.id) {
+    const deletedUser = await User.findByIdAndDelete(req.params.id);
+    res.status(200).json({message:"success", id: deletedUser.id });
+  } else {
+    res.status(400).json({error: "Error while deleting entity"});
+  }
+});
+
+module.exports = { register, authenticate, getSelf, deleteUser };
 
 const isValidEmail = (email) => {
-    const emailRegex = /@(student\.laverdad\.edu\.ph|laverdad\.edu\.ph)$/i;
-    return email.match(emailRegex);
-  };
-  
-  const hashPassword = async (password) => {
-    const salt = await bcrypt.genSalt(10);
-    return bcrypt.hash(password, salt);
-  };
-  
-  const isValidPassword = (password) => {
-    return /^(?=.*\d)(?=.*[a-zA-Z])(?=.*[!@#$%^&*])/.test(password);
-  };
-  
-  const generateToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "1d" });
-  };
-  
+  const emailRegex = /@(student\.laverdad\.edu\.ph|laverdad\.edu\.ph)$/i;
+  return email.match(emailRegex);
+};
+
+const hashPassword = async (password) => {
+  const salt = await bcrypt.genSalt(10);
+  return bcrypt.hash(password, salt);
+};
+
+const isValidPassword = (password) => {
+  return /^(?=.*\d)(?=.*[a-zA-Z])(?=.*[!@#$%^&*])/.test(password);
+};
+
+const generateToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+};
