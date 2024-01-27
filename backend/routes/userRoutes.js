@@ -1,5 +1,5 @@
 const { register, authenticate, getSelf } = require('../controllers/userController')
-const { protect } = require('../middlewares/authMiddleware')
+const { protect, isAdmin } = require('../middlewares/authMiddleware')
 
 const router = require('express').Router()
 
