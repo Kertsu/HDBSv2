@@ -9,10 +9,9 @@ const connectDB = require("./config/db");
 
 const WebSocket = require("ws");
 let WSServer = WebSocket.Server;
-let server = require("http").createServer();
+let server = require("http").createServer(app);
 let wss = new WSServer({
-  server: server,
-  perMessageDeflate: false,
+  server    
 });
 
 wss.on("connection", (ws) => {
@@ -22,7 +21,6 @@ wss.on("connection", (ws) => {
   ws.send("Hello! Message From Server!!");
 });
 
-server.on("request", app);
 
 connectDB();
 
@@ -46,10 +44,10 @@ app.use(urlencoded({ extended: true }));
 
 app.use("/api/users", require("./routes/userRoutes"));
 
-server.listen(80, () => {
+server.listen(port, () => {
   console.log(`Amazing Zlatko Method™ combo server on 80`);
 });
 
-app.listen(port, () => {
-  console.log("App listening on: " + port);
-});
+// app.listen(port, () => {
+//   console.log("App listening on: " + port);
+// });

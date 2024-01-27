@@ -105,7 +105,7 @@ const getSelf = asyncHandler(async (req, res) => {
   );
 
   res.status(200).json({
-    message: "Sucess",
+    message: "success",
     user: {
       id,
       username,
