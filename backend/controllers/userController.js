@@ -6,7 +6,6 @@ const bcrypt = require("bcryptjs");
 
 const User = require("../models/userModel");
 const cloudinary = require("../config/cloudinary");
-
 /**
  * Register a user
  */
@@ -68,6 +67,7 @@ const authenticate = asyncHandler(async (req, res) => {
   const userByEmail = await User.findOne({ email });
   const userByUsername = await User.findOne({ username });
 
+
   if (!userByEmail && !userByUsername) {
     return res.status(400).json({ error: "Invalid credentials" });
   }
@@ -86,6 +86,7 @@ const authenticate = asyncHandler(async (req, res) => {
       email: user.email,
       token: generateToken(user.id),
     };
+
 
     res.status(200).json({
       message: "success",
