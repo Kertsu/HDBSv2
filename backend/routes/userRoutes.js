@@ -1,34 +1,39 @@
-const { register, authenticate, getSelf, deleteUser, uploadAvatar } = require('../controllers/userController')
-const { protect, isAdmin } = require('../middlewares/authMiddleware')
-const upload = require('../middlewares/multer')
+const {
+  register,
+  authenticate,
+  getSelf,
+  deleteUser,
+  uploadAvatar,
+} = require("../controllers/userController");
+const { protect, isAdmin } = require("../middlewares/authMiddleware");
+const upload = require("../middlewares/multer");
 
-const router = require('express').Router()
+const router = require("express").Router();
 
-// Register user
-router.post('/register', register)
+  // Register user
+  router.post("/register", register);
 
-// Authenticate user
-router.post('/login', authenticate)
+  // Authenticate user
+  router.post("/login", authenticate);
 
-// Get self
-router.get('/self', protect, getSelf)
+  // Get self
+  router.get("/self", protect, getSelf);
 
-// Delete user
-router.delete('/delete/:id', isAdmin, deleteUser)
+  // Delete user
+  router.delete("/delete/:id", isAdmin, deleteUser);
 
-// Upload avatar
-router.put('/self/avatar', protect, upload.single('avatar'), uploadAvatar )
+  // Upload avatar
+  router.put("/self/avatar", protect, upload.single("avatar"), uploadAvatar);
+
 
 /**
  * @todo
  * Update user
  */
 
-
 /**
  * @todo
  * Update self
  */
 
-
-module.exports = router
+module.exports = router;

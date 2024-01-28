@@ -32,6 +32,13 @@ const userSchema = mongoose.Schema(
       default: "user",
       enum: ["user", "admin", "om", "superadmin"],
     },
+    notifications: [
+      {
+        message: String,
+        timestamp: { type: Date, default: Date.now },
+        status: { type: String, enum : ['unread', 'read', 'archived'],  default: 'unread' } 
+      }
+    ]
   },
   { timestamps: true }
 );

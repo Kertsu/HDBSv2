@@ -138,7 +138,7 @@ const deleteUser = asyncHandler(async (req, res) => {
 /**
  * Upload avatar
  */
-const uploadAvatar = asyncHandler(async (req, res) => {
+const uploadAvatar = asyncHandler(async (io, req, res) => {
 
   const user = await User.findById(req.user.id)
 
@@ -183,4 +183,8 @@ const isValidPassword = (password) => {
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+};
+
+const sendNotification = (io, userId, message) => {
+  io.to(userId).emit('notification', { message });
 };
