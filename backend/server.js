@@ -7,6 +7,19 @@ const { urlencoded } = require("body-parser");
 const connectDB = require("./config/db");
 const cors = require("cors");
 
+// Models
+const User = require("./models/userModel");
+
+const { protect, isAdmin } = require("./middlewares/authMiddleware");
+const asyncHandler = require("express-async-handler");
+const upload = require("./middlewares/multer");
+const bcrypt = require("bcryptjs");
+const { generateToken } = require("./utils/helpers");
+const { attachSocketMiddleware } = require("./middlewares/socketMiddleware");
+
+// Routers
+const userRouter = express.Router();
+
 connectDB();
 
 const allowedOrigins = [
@@ -27,30 +40,59 @@ app.use(
   })
 );
 
+let connectedUsers = [];
 
 const server = require("http").createServer(app);
 const io = require("socket.io")(server);
 
 io.on("connection", (socket) => {
 
-  console.log(socket.id);
-
   socket.on("disconnect", () => {
- 
+    removeUser(socket.id)
+    console.log(connectedUsers)
   });
 
-  socket.on("messages", (res) => console.log(socket.id));
 
-  io.emit("push-notif", "hey socket");
+  socket.on("login", async ({ email, password }) => {
+    const user = await User.findOne({ email });
+
+    if (user && (await bcrypt.compare(password, user.password))) {
+      addNewUser(user.id, socket.id);
+
+      const userData = {
+        id: user.id,
+        role: user.role,
+        username: user.username,
+        email: user.email,
+        token: generateToken(user.id),
+      };
+
+      io.to(socket.id).emit('loginSuccess', userData);
+    } else {
+      io.to(socket.id).emit('loginFailed', {success: false, error: "Invalid credentials"});
+    }
+  });
+
+
 });
-
 
 app.set("trust proxy", true);
 
 app.use(express.json());
 app.use(urlencoded({ extended: true }));
+app.use(attachSocketMiddleware(io))
 
-app.use("/api/users", require("./routes/userRoutes")(io));
+const addNewUser = (id, socketId) => {
+  !connectedUsers.some((user) => user.id === id) && connectedUsers.push({ id, socketId });
+};
+
+const removeUser = (socketId) => {
+  connectedUsers = connectedUsers.filter(user => user.socketId !== socketId)
+};
+
+const getUser = (id) => {
+  return connectedUsers.find(user => user.id == id)
+}
 
 server.listen(port, () => {
   console.log(`Server is listening on port ${port}`);

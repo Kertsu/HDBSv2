@@ -168,23 +168,7 @@ const uploadAvatar = asyncHandler(async (io, req, res) => {
 
 module.exports = { register, authenticate, getSelf, deleteUser, uploadAvatar };
 
-const isValidEmail = (email) => {
-  const emailRegex = /@(student\.laverdad\.edu\.ph|laverdad\.edu\.ph)$/i;
-  return email.match(emailRegex);
-};
 
-const hashPassword = async (password) => {
-  const salt = await bcrypt.genSalt(10);
-  return bcrypt.hash(password, salt);
-};
-
-const isValidPassword = (password) => {
-  return /^(?=.*\d)(?=.*[a-zA-Z])(?=.*[!@#$%^&*])/.test(password);
-};
-
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "1d" });
-};
 
 const sendNotification = (io, userId, message) => {
   io.to(userId).emit('notification', { message });
