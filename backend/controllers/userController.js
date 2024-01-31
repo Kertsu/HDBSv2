@@ -127,22 +127,26 @@ const getSelf = asyncHandler(async (req, res) => {
  * Delete a user
  */
 const deleteUser = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.params.id);
+  const userToDelete = await User.findById(req.params.id);
 
-  if (!user) {
+  if (!userToDelete) {
     res.status(400);
     throw new Error("User not found");
   }
 
-  if (req.params.id !== req.user.id) {
+  const requestingUser = req.user;
+
+  if (requestingUser.role === 'admin' && userToDelete.role !== 'admin' && userToDelete.role !== 'superadmin') {
     const deletedUser = await User.findByIdAndDelete(req.params.id);
-    res.status(200).json({ message: "success", id: deletedUser.id });
+    res.status(200).json({ success: true, id: deletedUser.id });
+  } else if (requestingUser.role === 'superadmin' && userToDelete.role !== 'superadmin') {
+    const deletedUser = await User.findByIdAndDelete(req.params.id);
+    res.status(200).json({ success: true, id: deletedUser.id });
   } else {
-    res
-      .status(400)
-      .json({ success: false, error: "Error while deleting entity" });
+    res.status(403).json({ success: false, error: "Permission denied" });
   }
 });
+
 
 /**
  * Upload avatar
