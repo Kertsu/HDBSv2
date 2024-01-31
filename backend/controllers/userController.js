@@ -2,9 +2,15 @@ const asyncHandler = require("express-async-handler");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 
-const { generateToken, isValidPassword, hashPassword, isValidEmail } = require("../utils/helpers");
+const {
+  generateToken,
+  isValidPassword,
+  hashPassword,
+  isValidEmail,
+} = require("../utils/helpers");
 
 const User = require("../models/userModel");
+const Notification = require('../models/notificationModel')
 const cloudinary = require("../config/cloudinary");
 /**
  * Register a user
@@ -136,17 +142,23 @@ const deleteUser = asyncHandler(async (req, res) => {
 
   const requestingUser = req.user;
 
-  if (requestingUser.role === 'admin' && userToDelete.role !== 'admin' && userToDelete.role !== 'superadmin') {
+  if (
+    requestingUser.role === "admin" &&
+    userToDelete.role !== "admin" &&
+    userToDelete.role !== "superadmin"
+  ) {
     const deletedUser = await User.findByIdAndDelete(req.params.id);
     res.status(200).json({ success: true, deletedUser });
-  } else if (requestingUser.role === 'superadmin' && userToDelete.role !== 'superadmin') {
+  } else if (
+    requestingUser.role === "superadmin" &&
+    userToDelete.role !== "superadmin"
+  ) {
     const deletedUser = await User.findByIdAndDelete(req.params.id);
     res.status(200).json({ success: true, deletedUser });
   } else {
     res.status(403).json({ success: false, error: "Permission denied" });
   }
 });
-
 
 /**
  * Upload avatar
@@ -176,7 +188,43 @@ const uploadAvatar = asyncHandler(async (io, req, res) => {
   });
 });
 
-module.exports = { register, authenticate, getSelf, deleteUser, uploadAvatar };
+/**
+ * Get self notifications
+ */
+const getNotifications = asyncHandler(async(req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  const notifications = await Notification.find({user: req.user.id}).skip(skip).limit(limit)
+  
+  res.status(200).json({
+    success: true, 
+    notifications,
+    currentPage: page,
+    totalPages: Math.ceil((await Notification.countDocuments({ user: req.user.id})) / limit),
+    totalDocuments: await Notification.countDocuments({ user: req.user.id})
+  })
+})
+
+/**
+ * Update self
+ */
+// const updateSelf = asyncHandler(async (req, res) => {
+
+//   const user = await User.findById(req.user.id)
+
+//   if(!user){
+//     res.status(404).status({
+//       success: false,
+//       error: 'User not found'
+//     })
+//   }
+
+
+// });
+
+module.exports = { register, authenticate, getSelf, deleteUser, uploadAvatar, getNotifications};
 
 const sendNotification = (io, userId, message) => {
   io.to(userId).emit("notification", { message });

@@ -4,6 +4,7 @@ const {
   getSelf,
   deleteUser,
   uploadAvatar,
+  getNotifications,
 } = require("../controllers/userController");
 const { protect, isAdmin } = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/multer");
@@ -19,21 +20,24 @@ router.post("/login", authenticate);
 // Get self
 router.get("/self", protect, getSelf);
 
+// Get self nofitications
+router.get('/self/notifications', protect, getNotifications)
+
 // Delete user
 router.delete("/:id", isAdmin, deleteUser);
 
 // Upload avatar
 router.put("/self/avatar", protect, upload.single("avatar"), uploadAvatar);
 
+
+// Update self
+// router.put('/self/update', protect, updateSelf)
+
+
 /**
  * @todo
  * Update user
  */
 
-/**
- * @todo
- * Update self
- */
-// router.put('/self/update', protect, )
 
 module.exports = router;
