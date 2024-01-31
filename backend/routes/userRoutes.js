@@ -20,7 +20,7 @@ router.post("/login", authenticate);
 router.get("/self", protect, getSelf);
 
 // Delete user
-router.delete("/delete/:id", isAdmin, deleteUser);
+router.delete("/:id", isAdmin, deleteUser);
 
 // Upload avatar
 router.put("/self/avatar", protect, upload.single("avatar"), uploadAvatar);
@@ -34,5 +34,6 @@ router.put("/self/avatar", protect, upload.single("avatar"), uploadAvatar);
  * @todo
  * Update self
  */
+// router.put('/self/update', protect, )
 
 module.exports = router;

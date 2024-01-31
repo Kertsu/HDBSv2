@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken')
+const bcrypt = require('bcryptjs')
 
 const isValidEmail = (email) => {
   const emailRegex = /@(student\.laverdad\.edu\.ph|laverdad\.edu\.ph)$/i;

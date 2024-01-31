@@ -2,7 +2,7 @@ const asyncHandler = require("express-async-handler");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 
-const { generateToken } = require("../utils/helpers");
+const { generateToken, isValidPassword, hashPassword, isValidEmail } = require("../utils/helpers");
 
 const User = require("../models/userModel");
 const cloudinary = require("../config/cloudinary");
@@ -138,10 +138,10 @@ const deleteUser = asyncHandler(async (req, res) => {
 
   if (requestingUser.role === 'admin' && userToDelete.role !== 'admin' && userToDelete.role !== 'superadmin') {
     const deletedUser = await User.findByIdAndDelete(req.params.id);
-    res.status(200).json({ success: true, id: deletedUser.id });
+    res.status(200).json({ success: true, deletedUser });
   } else if (requestingUser.role === 'superadmin' && userToDelete.role !== 'superadmin') {
     const deletedUser = await User.findByIdAndDelete(req.params.id);
-    res.status(200).json({ success: true, id: deletedUser.id });
+    res.status(200).json({ success: true, deletedUser });
   } else {
     res.status(403).json({ success: false, error: "Permission denied" });
   }
