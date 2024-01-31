@@ -8,7 +8,6 @@ const {
 const { protect, isAdmin } = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/multer");
 
-const userRoutesSetup = (io) =>{
 
 const router = require("express").Router();
 
@@ -27,8 +26,6 @@ const router = require("express").Router();
   // Upload avatar
   router.put("/self/avatar", protect, upload.single("avatar"), uploadAvatar);
 
-  return router;
-}
 
 /**
  * @todo
@@ -40,4 +37,4 @@ const router = require("express").Router();
  * Update self
  */
 
-module.exports = userRoutesSetup;
+module.exports = router;

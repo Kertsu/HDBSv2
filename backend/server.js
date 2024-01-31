@@ -17,8 +17,6 @@ const bcrypt = require("bcryptjs");
 const { generateToken } = require("./utils/helpers");
 const { attachSocketMiddleware } = require("./middlewares/socketMiddleware");
 
-// Routers
-const userRouter = express.Router();
 
 connectDB();
 
@@ -51,28 +49,7 @@ io.on("connection", (socket) => {
     removeUser(socket.id)
     console.log(connectedUsers)
   });
-
-
-  socket.on("login", async ({ email, password }) => {
-    const user = await User.findOne({ email });
-
-    if (user && (await bcrypt.compare(password, user.password))) {
-      addNewUser(user.id, socket.id);
-
-      const userData = {
-        id: user.id,
-        role: user.role,
-        username: user.username,
-        email: user.email,
-        token: generateToken(user.id),
-      };
-
-      io.to(socket.id).emit('loginSuccess', userData);
-    } else {
-      io.to(socket.id).emit('loginFailed', {success: false, error: "Invalid credentials"});
-    }
-  });
-
+  
 
 });
 
@@ -81,6 +58,8 @@ app.set("trust proxy", true);
 app.use(express.json());
 app.use(urlencoded({ extended: true }));
 app.use(attachSocketMiddleware(io))
+
+app.use('/api/users', require('./routes/userRoutes'))
 
 const addNewUser = (id, socketId) => {
   !connectedUsers.some((user) => user.id === id) && connectedUsers.push({ id, socketId });

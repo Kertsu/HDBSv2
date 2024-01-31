@@ -2,7 +2,7 @@ const asyncHandler = require("express-async-handler");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 
-
+const { generateToken } = require("../utils/helpers");
 
 const User = require("../models/userModel");
 const cloudinary = require("../config/cloudinary");
@@ -14,6 +14,7 @@ const register = asyncHandler(async (req, res) => {
 
   if (!email || !password) {
     return res.status(400).json({
+      success: false,
       error: "Please fill in all mandatory fields",
     });
   }
@@ -22,16 +23,18 @@ const register = asyncHandler(async (req, res) => {
 
   if (userExist) {
     return res.status(400).json({
+      success: false,
       error: "User already exists",
     });
   }
 
   if (!isValidEmail(email)) {
-    return res.status(400).json({ error: "Email not allowed" });
+    return res.status(400).json({ success: false, error: "Email not allowed" });
   }
 
   if (password.length < 10 || !isValidPassword(password)) {
     return res.status(400).json({
+      success: false,
       error:
         "Invalid password. It should be at least 10 characters long and contain a mix of alphanumeric and special characters",
     });
@@ -48,11 +51,12 @@ const register = asyncHandler(async (req, res) => {
     });
 
     res.status(201).json({
-      message: "success",
+      sucecss: true,
       user,
     });
   } catch (error) {
     res.status(400).json({
+      success: false,
       error: "Invalid user data",
     });
   }
@@ -67,16 +71,19 @@ const authenticate = asyncHandler(async (req, res) => {
   const userByEmail = await User.findOne({ email });
   const userByUsername = await User.findOne({ username });
 
-
   if (!userByEmail && !userByUsername) {
-    return res.status(400).json({ error: "Invalid credentials" });
+    return res
+      .status(400)
+      .json({ success: false, error: "Invalid credentials" });
   }
 
   const user = userByEmail || userByUsername;
 
   if (await bcrypt.compare(password, user.password)) {
     if (user.isDisabled) {
-      return res.status(400).json({ error: "Your account is suspended" });
+      return res
+        .status(400)
+        .json({ success: false, error: "Your account is suspended" });
     }
 
     const userData = {
@@ -87,13 +94,12 @@ const authenticate = asyncHandler(async (req, res) => {
       token: generateToken(user.id),
     };
 
-
     res.status(200).json({
-      message: "success",
+      sucecss: true,
       user: userData,
     });
   } else {
-    res.status(400).json({ error: "Invalid credentials" });
+    res.status(400).json({ success: false, error: "Invalid credentials" });
   }
 });
 
@@ -106,7 +112,7 @@ const getSelf = asyncHandler(async (req, res) => {
   );
 
   res.status(200).json({
-    message: "success",
+    sucecss: true,
     user: {
       id,
       username,
@@ -130,9 +136,11 @@ const deleteUser = asyncHandler(async (req, res) => {
 
   if (req.params.id !== req.user.id) {
     const deletedUser = await User.findByIdAndDelete(req.params.id);
-    res.status(200).json({message:"success", id: deletedUser.id });
+    res.status(200).json({ message: "success", id: deletedUser.id });
   } else {
-    res.status(400).json({error: "Error while deleting entity"});
+    res
+      .status(400)
+      .json({ success: false, error: "Error while deleting entity" });
   }
 });
 
@@ -140,36 +148,32 @@ const deleteUser = asyncHandler(async (req, res) => {
  * Upload avatar
  */
 const uploadAvatar = asyncHandler(async (io, req, res) => {
+  const user = await User.findById(req.user.id);
 
-  const user = await User.findById(req.user.id)
-
-  if(!user){
-    return res.status(404).json({error: "User not found"})
+  if (!user) {
+    return res.status(404).json({ success: false, error: "User not found" });
   }
 
   cloudinary.uploader.upload(req.file.path, async (err, result) => {
     if (err) {
       return res.status(500).json({
-        error: "Cannot upload avatar"
-      })
+        success: false,
+        error: "Cannot upload avatar",
+      });
     }
 
-    user.avatar = result.url
+    user.avatar = result.url;
 
     await user.save();
 
-    res.status(200).json(
-      {
-        message: "success",
-      }
-    )
-  })
-})
+    res.status(200).json({
+      sucecss: true,
+    });
+  });
+});
 
 module.exports = { register, authenticate, getSelf, deleteUser, uploadAvatar };
 
-
-
 const sendNotification = (io, userId, message) => {
-  io.to(userId).emit('notification', { message });
+  io.to(userId).emit("notification", { message });
 };
