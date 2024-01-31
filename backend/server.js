@@ -47,9 +47,17 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     removeUser(socket.id)
-    console.log(connectedUsers)
+    console.log('dc',connectedUsers)
   });
   
+  socket.on("live", (data) => {
+    addNewUser(data, socket.id);
+  })
+
+  socket.on('die', () => {
+    removeUser(socket.id)
+    console.log('die',connectedUsers)
+  })
 
 });
 
@@ -63,6 +71,7 @@ app.use('/api/users', require('./routes/userRoutes'))
 
 const addNewUser = (id, socketId) => {
   !connectedUsers.some((user) => user.id === id) && connectedUsers.push({ id, socketId });
+  console.log('live',connectedUsers)
 };
 
 const removeUser = (socketId) => {
