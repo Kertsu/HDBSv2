@@ -163,12 +163,14 @@ const deleteUser = asyncHandler(async (req, res) => {
 /**
  * Upload avatar
  */
-const uploadAvatar = asyncHandler(async (io, req, res) => {
+const uploadAvatar = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user.id);
 
   if (!user) {
     return res.status(404).json({ success: false, error: "User not found" });
   }
+
+  console.log(user)
 
   cloudinary.uploader.upload(req.file.path, async (err, result) => {
     if (err) {

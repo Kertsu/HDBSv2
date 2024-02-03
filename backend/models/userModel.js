@@ -22,6 +22,7 @@ const userSchema = mongoose.Schema(
     },
     avatar: {
       type: String,
+      default: "http://res.cloudinary.com/drlztlr1m/image/upload/v1706979188/oxbsppubd3rsabqwfxsr.jpg"
     },
     isDisabled: {
       type: Boolean,
