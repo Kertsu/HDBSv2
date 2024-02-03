@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const nofiticationSchema = mongoose.Schema(
+const notificationSchema = mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
@@ -20,4 +20,4 @@ const nofiticationSchema = mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Notification", nofiticationSchema);
+module.exports = mongoose.model("Notification", notificationSchema);
