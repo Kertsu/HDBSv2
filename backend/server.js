@@ -51,6 +51,7 @@ io.on("connection", (socket) => {
   });
   
   socket.on("live", (data) => {
+    // console.log(data);
     addNewUser(data, socket.id);
   })
 
@@ -69,16 +70,18 @@ app.use(attachSocketMiddleware(io))
 
 app.use('/api/users', require('./routes/userRoutes'))
 
-const addNewUser = ({id, username, avatar}, socketId) => {
+const addNewUser = ({id, username, email, role, avatar}, socketId) => {
   const user = {
-    id, username, avatar, socketId
+    id, username, email, role, avatar, socketId
   }
   !connectedUsers.some((user) => user.id === id) && connectedUsers.push(user);
   console.log('live',connectedUsers)
+  io.emit('connectedUsers', connectedUsers)
 };
 
 const removeUser = (socketId) => {
   connectedUsers = connectedUsers.filter(user => user.socketId !== socketId)
+  io.emit('connectedUsers', connectedUsers)
 };
 
 const getUser = (id) => {
