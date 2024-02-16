@@ -185,7 +185,7 @@ const uploadAvatar = asyncHandler(async (req, res) => {
     await user.save();
 
     res.status(200).json({
-      sucecss: true,
+      success: true,
     });
   });
 });
@@ -212,21 +212,57 @@ const getNotifications = asyncHandler(async(req, res) => {
 /**
  * Update self
  */
-// const updateSelf = asyncHandler(async (req, res) => {
+const updateSelf = asyncHandler(async (req, res) => {
 
-//   const user = await User.findById(req.user.id)
+  const {username} = req.body
+  const user = await User.findById(req.user.id)
 
-//   if(!user){
-//     res.status(404).status({
-//       success: false,
-//       error: 'User not found'
-//     })
-//   }
+  if(!user){
+    res.status(404).json({
+      success: false,
+      error: 'User not found'
+    })
+  }
+
+  if (username && !/^[a-zA-Z_]+$/.test(username)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid username'
+    });
+  }
+
+  if (req.file){
+    cloudinary.uploader.upload(req.file.path, async (err, result) => {
+      if (err) {
+        return res.status(500).json({
+          success: false,
+          error: "Cannot upload avatar",
+        });
+      }
+  
+      user.avatar = result.url;
+      await user.save()
+    });
+  }
+
+  if (username){
+    user.username = username
+  }
+
+  try {
+    await user.save();
+    res.status(200).json({ success: true, user });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: "Error saving user",
+    });
+  }
+
+});
 
 
-// });
-
-module.exports = { register, authenticate, getSelf, deleteUser, uploadAvatar, getNotifications};
+module.exports = { register, authenticate, getSelf, deleteUser, uploadAvatar, getNotifications, updateSelf};
 
 const sendNotification = (io, userId, message) => {
   io.to(userId).emit("notification", { message });
