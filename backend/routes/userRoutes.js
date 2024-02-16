@@ -6,6 +6,7 @@ const {
   uploadAvatar,
   getNotifications,
   updateSelf,
+  updateRole,
 } = require("../controllers/userController");
 const { protect, isAdmin } = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/multer");
@@ -30,14 +31,16 @@ router.delete("/:id", isAdmin, deleteUser);
 // Upload avatar
 router.put("/self/avatar", protect, upload.single("avatar"), uploadAvatar);
 
-
 // Update self
 router.put('/self/update', protect, upload.single("avatar"),updateSelf)
 
+// Update role (admins only)
+router.put('/:id', isAdmin, updateRole)
 
 /**
- * @todo
- * Update user
+ * @TODO
+ * forgot password
+ * reset password
  */
 
 

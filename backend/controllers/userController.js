@@ -10,7 +10,7 @@ const {
 } = require("../utils/helpers");
 
 const User = require("../models/userModel");
-const Notification = require('../models/notificationModel')
+const Notification = require("../models/notificationModel");
 const cloudinary = require("../config/cloudinary");
 /**
  * Register a user
@@ -142,6 +142,11 @@ const deleteUser = asyncHandler(async (req, res) => {
 
   const requestingUser = req.user;
 
+  if (userToDelete._id.equals(requestingUser._id)) {
+    res.status(403).json({ success: false, error: "You cannot delete your account." });
+    return;
+  }
+
   if (
     requestingUser.role === "admin" &&
     userToDelete.role !== "admin" &&
@@ -170,7 +175,7 @@ const uploadAvatar = asyncHandler(async (req, res) => {
     return res.status(404).json({ success: false, error: "User not found" });
   }
 
-  console.log(user)
+  console.log(user);
 
   cloudinary.uploader.upload(req.file.path, async (err, result) => {
     if (err) {
@@ -193,45 +198,48 @@ const uploadAvatar = asyncHandler(async (req, res) => {
 /**
  * Get self notifications
  */
-const getNotifications = asyncHandler(async(req, res) => {
+const getNotifications = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
 
-  const notifications = await Notification.find({user: req.user.id}).skip(skip).limit(limit)
-  
+  const notifications = await Notification.find({ user: req.user.id })
+    .skip(skip)
+    .limit(limit);
+
   res.status(200).json({
-    success: true, 
+    success: true,
     notifications,
     currentPage: page,
-    totalPages: Math.ceil((await Notification.countDocuments({ user: req.user.id})) / limit),
-    totalDocuments: await Notification.countDocuments({ user: req.user.id})
-  })
-})
+    totalPages: Math.ceil(
+      (await Notification.countDocuments({ user: req.user.id })) / limit
+    ),
+    totalDocuments: await Notification.countDocuments({ user: req.user.id }),
+  });
+});
 
 /**
  * Update self
  */
 const updateSelf = asyncHandler(async (req, res) => {
+  const { username } = req.body;
+  const user = await User.findById(req.user.id);
 
-  const {username} = req.body
-  const user = await User.findById(req.user.id)
-
-  if(!user){
+  if (!user) {
     res.status(404).json({
       success: false,
-      error: 'User not found'
-    })
+      error: "User not found",
+    });
   }
 
   if (username && !/^[a-zA-Z_]+$/.test(username)) {
     return res.status(400).json({
       success: false,
-      error: 'Invalid username'
+      error: "Invalid username",
     });
   }
 
-  if (req.file){
+  if (req.file) {
     cloudinary.uploader.upload(req.file.path, async (err, result) => {
       if (err) {
         return res.status(500).json({
@@ -239,14 +247,14 @@ const updateSelf = asyncHandler(async (req, res) => {
           error: "Cannot upload avatar",
         });
       }
-  
+
       user.avatar = result.url;
-      await user.save()
+      await user.save();
     });
   }
 
-  if (username){
-    user.username = username
+  if (username) {
+    user.username = username;
   }
 
   try {
@@ -258,12 +266,53 @@ const updateSelf = asyncHandler(async (req, res) => {
       error: "Error saving user",
     });
   }
-
 });
 
+/**
+ * Update user role
+ */
+const updateRole = asyncHandler(async (req, res) => {
+  const userToUpdate = await User.findById(req.params.id);
 
-module.exports = { register, authenticate, getSelf, deleteUser, uploadAvatar, getNotifications, updateSelf};
+  if (!userToUpdate) {
+    res.status(400);
+    throw new Error("User not found");
+  }
 
-const sendNotification = (io, userId, message) => {
-  io.to(userId).emit("notification", { message });
+  const requestingUser = req.user;
+
+
+
+  if (userToUpdate._id.equals(requestingUser._id)) {
+    res.status(403).json({ success: false, error: "You cannot update your own role." });
+    return;
+  }
+
+  if (
+    requestingUser.role === "admin" &&
+    userToUpdate.role !== "admin" &&
+    userToUpdate.role !== "superadmin"
+  ) {
+    const updatedUser = await User.findByIdAndDelete(req.params.id);
+    res.status(200).json({ success: true, updatedUser });
+  } else if (
+    requestingUser.role === "superadmin" &&
+    userToUpdate.role !== "superadmin"
+  ) {
+    const updatedUser = await User.findByIdAndDelete(req.params.id);
+    res.status(200).json({ success: true, updatedUser });
+  } else {
+    res.status(403).json({ success: false, error: "Permission denied" });
+  }
+});
+
+module.exports = {
+  register,
+  authenticate,
+  getSelf,
+  deleteUser,
+  uploadAvatar,
+  getNotifications,
+  updateSelf,
+  updateRole,
 };
