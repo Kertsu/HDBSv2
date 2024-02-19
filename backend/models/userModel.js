@@ -31,6 +31,9 @@ const userSchema = mongoose.Schema(
       type: String,
       default: "http://res.cloudinary.com/drlztlr1m/image/upload/v1706979188/oxbsppubd3rsabqwfxsr.jpg"
     },
+    banner: {
+      type: String,
+    },
     isDisabled: {
       type: Boolean,
       default: false,
