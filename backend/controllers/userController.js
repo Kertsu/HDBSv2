@@ -113,9 +113,8 @@ const authenticate = asyncHandler(async (req, res) => {
  * Get self
  */
 const getSelf = asyncHandler(async (req, res) => {
-  const { id, username, email, role, avatar,banner } = await User.findById(
-    req.user.id
-  );
+  const { id, username, email, role, avatar, banner, description } =
+    await User.findById(req.user.id);
 
   res.status(200).json({
     sucecss: true,
@@ -124,7 +123,9 @@ const getSelf = asyncHandler(async (req, res) => {
       username,
       email,
       role,
-      avatar,banner
+      avatar,
+      banner,
+      description,
     },
   });
 });
@@ -143,7 +144,9 @@ const deleteUser = asyncHandler(async (req, res) => {
   const requestingUser = req.user;
 
   if (userToDelete._id.equals(requestingUser._id)) {
-    res.status(403).json({ success: false, error: "You cannot delete your account." });
+    res
+      .status(403)
+      .json({ success: false, error: "You cannot delete your account." });
     return;
   }
 
@@ -252,7 +255,7 @@ const getNotifications = asyncHandler(async (req, res) => {
  * Update self
  */
 const updateSelf = asyncHandler(async (req, res) => {
-  const { username } = req.body;
+  const { username, description } = req.body;
   const user = await User.findById(req.user.id);
 
   if (!user) {
@@ -287,6 +290,10 @@ const updateSelf = asyncHandler(async (req, res) => {
     user.username = username;
   }
 
+  if (description) {
+    user.description = description;
+  }
+
   try {
     await user.save();
     res.status(200).json({ success: true, user });
@@ -311,10 +318,10 @@ const updateRole = asyncHandler(async (req, res) => {
 
   const requestingUser = req.user;
 
-
-
   if (userToUpdate._id.equals(requestingUser._id)) {
-    res.status(403).json({ success: false, error: "You cannot update your own role." });
+    res
+      .status(403)
+      .json({ success: false, error: "You cannot update your own role." });
     return;
   }
 
@@ -345,5 +352,5 @@ module.exports = {
   getNotifications,
   updateSelf,
   updateRole,
-  uploadBanner
+  uploadBanner,
 };

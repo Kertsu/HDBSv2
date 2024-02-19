@@ -17,7 +17,6 @@ const bcrypt = require("bcryptjs");
 const { generateToken } = require("./utils/helpers");
 const { attachSocketMiddleware } = require("./middlewares/socketMiddleware");
 
-
 connectDB();
 
 const allowedOrigins = [
@@ -44,49 +43,57 @@ const server = require("http").createServer(app);
 const io = require("socket.io")(server);
 
 io.on("connection", (socket) => {
-
   socket.on("disconnect", () => {
-    removeUser(socket.id)
-    console.log('dc',connectedUsers)
+    removeUser(socket.id);
+    console.log("dc", connectedUsers);
   });
-  
+
   socket.on("live", (data) => {
     // console.log(data);
     addNewUser(data, socket.id);
-  })
+  });
 
-  socket.on('die', () => {
-    removeUser(socket.id)
-    console.log('die',connectedUsers)
-  })
-
+  socket.on("die", () => {
+    removeUser(socket.id);
+    console.log("die", connectedUsers);
+  });
 });
 
 app.set("trust proxy", true);
 
 app.use(express.json());
 app.use(urlencoded({ extended: true }));
-app.use(attachSocketMiddleware(io))
+app.use(attachSocketMiddleware(io));
 
-app.use('/api/users', require('./routes/userRoutes'))
+app.use("/api/users", require("./routes/userRoutes"));
 
-const addNewUser = ({id, username, email, role, avatar, banner}, socketId) => {
+const addNewUser = (
+  { id, username, email, role, avatar, banner, description },
+  socketId
+) => {
   const user = {
-    id, username, email, role, avatar, banner,socketId
-  }
+    id,
+    username,
+    email,
+    role,
+    avatar,
+    banner,
+    description,
+    socketId,
+  };
   !connectedUsers.some((user) => user.id === id) && connectedUsers.push(user);
-  console.log('live',connectedUsers)
-  io.emit('connectedUsers', connectedUsers)
+  console.log("live", connectedUsers);
+  io.emit("connectedUsers", connectedUsers);
 };
 
 const removeUser = (socketId) => {
-  connectedUsers = connectedUsers.filter(user => user.socketId !== socketId)
-  io.emit('connectedUsers', connectedUsers)
+  connectedUsers = connectedUsers.filter((user) => user.socketId !== socketId);
+  io.emit("connectedUsers", connectedUsers);
 };
 
 const getUser = (id) => {
-  return connectedUsers.find(user => user.id == id)
-}
+  return connectedUsers.find((user) => user.id == id);
+};
 
 server.listen(port, () => {
   console.log(`Server is listening on port ${port}`);
