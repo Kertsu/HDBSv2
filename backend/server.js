@@ -70,9 +70,9 @@ app.use(attachSocketMiddleware(io))
 
 app.use('/api/users', require('./routes/userRoutes'))
 
-const addNewUser = ({id, username, email, role, avatar}, socketId) => {
+const addNewUser = ({id, username, email, role, avatar, banner}, socketId) => {
   const user = {
-    id, username, email, role, avatar, socketId
+    id, username, email, role, avatar, banner,socketId
   }
   !connectedUsers.some((user) => user.id === id) && connectedUsers.push(user);
   console.log('live',connectedUsers)

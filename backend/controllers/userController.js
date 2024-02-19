@@ -113,7 +113,7 @@ const authenticate = asyncHandler(async (req, res) => {
  * Get self
  */
 const getSelf = asyncHandler(async (req, res) => {
-  const { id, username, email, role, avatar } = await User.findById(
+  const { id, username, email, role, avatar,banner } = await User.findById(
     req.user.id
   );
 
@@ -124,7 +124,7 @@ const getSelf = asyncHandler(async (req, res) => {
       username,
       email,
       role,
-      avatar,
+      avatar,banner
     },
   });
 });
@@ -186,6 +186,36 @@ const uploadAvatar = asyncHandler(async (req, res) => {
     }
 
     user.avatar = result.url;
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+    });
+  });
+});
+
+/**
+ * Upload banner
+ */
+const uploadBanner = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user.id);
+
+  if (!user) {
+    return res.status(404).json({ success: false, error: "User not found" });
+  }
+
+  console.log(user);
+
+  cloudinary.uploader.upload(req.file.path, async (err, result) => {
+    if (err) {
+      return res.status(500).json({
+        success: false,
+        error: "Cannot upload banner",
+      });
+    }
+
+    user.banner = result.url;
 
     await user.save();
 
@@ -315,4 +345,5 @@ module.exports = {
   getNotifications,
   updateSelf,
   updateRole,
+  uploadBanner
 };
