@@ -16,6 +16,13 @@ const userSchema = mongoose.Schema(
       required: true,
       unique: true
     },
+    description: {
+      type: String
+    },
+    receivingEmail: {
+      type: Boolean,
+      default: true
+    },
     resetToken: {
       type: String,
       expiresAt: Date,
