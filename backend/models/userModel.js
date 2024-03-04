@@ -5,7 +5,7 @@ const userSchema = mongoose.Schema(
     username: {
       type: String,
       required: true,
-      unique: true
+      unique: true,
     },
     password: {
       type: String,
@@ -14,14 +14,14 @@ const userSchema = mongoose.Schema(
     email: {
       type: String,
       required: true,
-      unique: true
+      unique: true,
     },
     description: {
-      type: String
+      type: String,
     },
     receivingEmail: {
       type: Boolean,
-      default: true
+      default: true,
     },
     resetToken: {
       type: String,
@@ -29,7 +29,8 @@ const userSchema = mongoose.Schema(
     },
     avatar: {
       type: String,
-      default: "http://res.cloudinary.com/drlztlr1m/image/upload/v1706979188/oxbsppubd3rsabqwfxsr.jpg"
+      default:
+        "http://res.cloudinary.com/drlztlr1m/image/upload/v1706979188/oxbsppubd3rsabqwfxsr.jpg",
     },
     banner: {
       type: String,
@@ -46,12 +47,22 @@ const userSchema = mongoose.Schema(
     securityQuestion1: {
       question: {
         type: String,
-        default: ""
+        default: "",
       },
       answer: {
         type: String,
-        default: ""
-      }
+        default: "",
+      },
+    },
+    securityQuestion2: {
+      question: {
+        type: String,
+        default: "",
+      },
+      answer: {
+        type: String,
+        default: "",
+      },
     },
   },
   { timestamps: true }
