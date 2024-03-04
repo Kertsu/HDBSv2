@@ -44,26 +44,6 @@ const userSchema = mongoose.Schema(
       default: "user",
       enum: ["user", "admin", "om", "superadmin"],
     },
-    securityQuestion1: {
-      question: {
-        type: String,
-        default: "",
-      },
-      answer: {
-        type: String,
-        default: "",
-      },
-    },
-    securityQuestion2: {
-      question: {
-        type: String,
-        default: "",
-      },
-      answer: {
-        type: String,
-        default: "",
-      },
-    },
   },
   { timestamps: true }
 );
