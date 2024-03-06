@@ -98,10 +98,12 @@ const authenticate = asyncHandler(async (req, res) => {
       username: user.username,
       email: user.email,
       token: generateToken(user.id),
+      receivingEmail: user.receivingEmail,
+      description: user.description,
     };
 
     res.status(200).json({
-      sucecss: true,
+      success: true,
       user: userData,
     });
   } else {
