@@ -343,6 +343,61 @@ const updateRole = asyncHandler(async (req, res) => {
   }
 });
 
+/**
+ * Update user password
+ */
+const updatePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword, confirmPassword } = req.body;
+  const user = await User.findById(req.user.id);
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      error: "User not found",
+    });
+  }
+
+  const isMatch = await bcrypt.compare(currentPassword, user.password);
+  if (!isMatch) {
+    return res.status(400).json({
+      success: false,
+      error: "Current password is incorrect",
+    });
+  }
+
+  if(newPassword !== confirmPassword){
+    return res.status(400).json({
+      success: false,
+      error: "Passwords did not match",
+    });
+  }
+
+  const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+}{"':;?/>.<,]).{10,}$/;
+  if (!passwordRegex.test(newPassword)) {
+    return res.status(400).json({
+      success: false,
+      error:
+        "Invalid password. It should be at least 10 characters long and contain a mix of alphanumeric characters, lowercase, uppercase, and symbols",
+    });
+  }
+
+  const hashedPassword = await hashPassword(newPassword);
+
+  user.password = hashedPassword;
+
+  try {
+    await user.save();
+    res.status(200).json({ success: true, message: "Password updated successfully" });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: "Error updating password",
+    });
+  }
+});
+
+
+
 module.exports = {
   register,
   authenticate,
@@ -353,4 +408,5 @@ module.exports = {
   updateSelf,
   updateRole,
   uploadBanner,
+  updatePassword
 };

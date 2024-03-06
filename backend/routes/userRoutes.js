@@ -8,6 +8,7 @@ const {
   updateSelf,
   updateRole,
   uploadBanner,
+  updatePassword,
 } = require("../controllers/userController");
 const { protect, isAdmin } = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/multer");
@@ -38,8 +39,12 @@ router.put("/self/banner", protect, upload.single("banner"), uploadBanner);
 // Update self
 router.put('/self/update', protect, upload.single("avatar"),updateSelf)
 
+// Change password
+router.put('/change-password', protect, updatePassword)
+
 // Update role (admins only)
 router.put('/:id', isAdmin, updateRole)
+
 
 /**
  * @TODO
