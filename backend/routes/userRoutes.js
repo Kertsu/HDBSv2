@@ -9,11 +9,16 @@ const {
   updateRole,
   uploadBanner,
   updatePassword,
+  updateNotificationSettings,
+  getUsers,
 } = require("../controllers/userController");
 const { protect, isAdmin } = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/multer");
 
 const router = require("express").Router();
+
+// Get all users (Admin only)
+router.get('/', isAdmin, getUsers)
 
 // Register user
 router.post("/register", register);
@@ -39,8 +44,11 @@ router.put("/self/banner", protect, upload.single("banner"), uploadBanner);
 // Update self
 router.put('/self/update', protect, upload.single("avatar"),updateSelf)
 
+// Update receiving email preference
+router.patch('/self/update_notification_settings', protect, updateNotificationSettings)
+
 // Change password
-router.put('/change-password', protect, updatePassword)
+router.put('/change_password', protect, updatePassword)
 
 // Update role (admins only)
 router.put('/:id', isAdmin, updateRole)

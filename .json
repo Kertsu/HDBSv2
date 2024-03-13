@@ -1,0 +1,53 @@
+[
+    {
+      "user": "65b480cd73497b0eecac836b",
+      "message": "Your account has been upgraded to premium!",
+      "status": "read"
+    },
+    {
+      "user": "65b480cd73497b0eecac836b",
+      "message": "New followers: 5 users are now following you.",
+      "status": "unread"
+    },
+    {
+      "user": "65b480cd73497b0eecac836b",
+      "message": "Important: Change your password for security.",
+      "status": "unread"
+    },
+    {
+      "user": "65b480cd73497b0eecac836b",
+      "message": "You've been mentioned in a post.",
+      "status": "unread"
+    },
+    {
+      "user": "65b480cd73497b0eecac836b",
+      "message": "Notification settings updated successfully.",
+      "status": "read"
+    },
+    {
+      "user": "65b480cd73497b0eecac836b",
+      "message": "Your recent purchase has been shipped.",
+      "status": "unread"
+    },
+    {
+      "user": "65b480cd73497b0eecac836b",
+      "message": "Reminder: Complete your profile for better recommendations.",
+      "status": "unread"
+    },
+    {
+      "user": "65b480cd73497b0eecac836b",
+      "message": "Explore new features with our latest app update!",
+      "status": "unread"
+    },
+    {
+      "user": "65b480cd73497b0eecac836b",
+      "message": "Your friend has invited you to join a group.",
+      "status": "unread"
+    },
+    {
+      "user": "65b480cd73497b0eecac836b",
+      "message": "Thank you for being a valued user. Enjoy your day!",
+      "status": "read"
+    }
+  ]
+  

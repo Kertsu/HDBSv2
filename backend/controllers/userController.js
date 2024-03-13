@@ -12,6 +12,7 @@ const {
 const User = require("../models/userModel");
 const Notification = require("../models/notificationModel");
 const cloudinary = require("../config/cloudinary");
+const queryHelper = require("../utils/queryHelper");
 /**
  * Register a user
  */
@@ -398,6 +399,27 @@ const updatePassword = asyncHandler(async (req, res) => {
   }
 });
 
+/**
+ * Update email preference
+ */
+const updateNotificationSettings = asyncHandler(async(req, res) => {
+  res.json('hello')
+})
+
+
+/**
+ * Fetch all users (admin only)
+ */
+const getUsers = asyncHandler(async (req, res) => {
+  try {
+
+    const users = await queryHelper(User, req.query)
+
+    res.status(200).json(users);
+  } catch (error) {
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
 
 module.exports = {
@@ -410,5 +432,7 @@ module.exports = {
   updateSelf,
   updateRole,
   uploadBanner,
-  updatePassword
+  updatePassword,
+  updateNotificationSettings,
+  getUsers
 };
