@@ -368,14 +368,15 @@ const updatePassword = asyncHandler(async (req, res) => {
     });
   }
 
-  if(newPassword !== confirmPassword){
+  if (newPassword !== confirmPassword) {
     return res.status(400).json({
       success: false,
       error: "Passwords did not match",
     });
   }
 
-  const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+}{"':;?/>.<,]).{10,}$/;
+  const passwordRegex =
+    /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+}{"':;?/>.<,]).{10,}$/;
   if (!passwordRegex.test(newPassword)) {
     return res.status(400).json({
       success: false,
@@ -390,7 +391,9 @@ const updatePassword = asyncHandler(async (req, res) => {
 
   try {
     await user.save();
-    res.status(200).json({ success: true, message: "Password updated successfully" });
+    res
+      .status(200)
+      .json({ success: true, message: "Password updated successfully" });
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -402,25 +405,29 @@ const updatePassword = asyncHandler(async (req, res) => {
 /**
  * Update email preference
  */
-const updateNotificationSettings = asyncHandler(async(req, res) => {
-  res.json('hello')
-})
-
+const updateNotificationSettings = asyncHandler(async (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Durog ang kamote",
+  });
+});
 
 /**
  * Fetch all users (admin only)
  */
 const getUsers = asyncHandler(async (req, res) => {
   try {
+    const users = await queryHelper(User, req.params);
 
-    const users = await queryHelper(User, req.query)
-
-    res.status(200).json(users);
+    res.status(200).json({
+      success: true,
+      users,
+      totalDocuments: await User.countDocuments(),
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: "Internal server error" });
   }
 });
-
 
 module.exports = {
   register,
@@ -434,5 +441,5 @@ module.exports = {
   uploadBanner,
   updatePassword,
   updateNotificationSettings,
-  getUsers
+  getUsers,
 };

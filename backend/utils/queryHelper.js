@@ -3,6 +3,7 @@ const queryHelper = async (model, userQuery) => {
 
     let query = model.find();
 
+
     if (filters) {
     }
 
@@ -20,7 +21,10 @@ const queryHelper = async (model, userQuery) => {
 
     console.log(result)
 
-    return result
+    const formattedResult = result.map(doc => {return {id: doc.id, ...doc._doc }})
+
+
+    return formattedResult
 }
 
 
