@@ -416,8 +416,9 @@ const updateNotificationSettings = asyncHandler(async (req, res) => {
  * Fetch all users (admin only)
  */
 const getUsers = asyncHandler(async (req, res) => {
+  console.log(req.query)
   try {
-    const users = await queryHelper(User, req.params);
+    const users = await queryHelper(User, req.query);
 
     res.status(200).json({
       success: true,
