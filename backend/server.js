@@ -66,6 +66,7 @@ app.use(urlencoded({ extended: true }));
 app.use(attachSocketMiddleware(io));
 
 app.use("/api/users", require("./routes/userRoutes"));
+app.use("/api/reservations", require("./routes/reservationRoutes"));
 
 const addNewUser = (
   { id, username, email, role, avatar, banner, description },
