@@ -14,6 +14,8 @@ const {
 } = require("../controllers/userController");
 const { protect, isAdmin } = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/multer");
+const { bulkDelete } = require("../utils/helpers");
+const User = require('../models/userModel')
 
 const router = require("express").Router();
 
@@ -52,6 +54,9 @@ router.put('/change_password', protect, updatePassword)
 
 // Update role (admins only)
 router.put('/:id', isAdmin, updateRole)
+
+// Bulk deletion
+router.post('/bulk-delete', isAdmin, bulkDelete(User))
 
 
 /**
