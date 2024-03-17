@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
-const ayncHandler = require("express-async-handler");
+const asyncHandler = require("express-async-handler");
 
 const isValidEmail = (email) => {
   const emailRegex = /@(student\.laverdad\.edu\.ph|laverdad\.edu\.ph)$/i;
@@ -20,19 +20,35 @@ const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "1d" });
 };
 
-const bulkDelete = (model) => ayncHandler(async (req, res) => {
+const bulkDelete = (model) => asyncHandler(async (req, res) => {
+  const ids = req.body.ids; 
+  console.log(ids);
 
-  const ids = req.body.items
+  const objectIds = ids.map(id => {
+    try {
+      return mongoose.Types.ObjectId(id);
+    } catch (error) {
+      console.error(`Invalid ObjectId: ${id}`);
+      return null;
+    }
+  }).filter(id => id !== null);
+
+  if (objectIds.length === 0) {
+    return res.status(400).json({ error: "Invalid item IDs provided." });
+  }
 
   try {
-    model.deleteMany({_id: {$in: ids}})
+    const result = await model.deleteMany({ _id: { $in: objectIds } });
+    console.log("Deletion result:", result);
 
-    res.status(200).json({success: true ,message: `Items were deleted successfully`})
+    res.status(200).json({ success: true, message: `Items were deleted successfully` });
   } catch (error) {
     console.error("Error during bulk deletion:", error);
     res.status(500).json({ error: "An error occurred during bulk deletion." });
   }
 });
+
+
 
 module.exports = {
   isValidEmail,

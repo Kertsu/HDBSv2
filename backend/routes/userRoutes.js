@@ -56,7 +56,7 @@ router.patch('/change-password', protect, updatePassword)
 router.patch('/:id', isAdmin, updateUser)
 
 // Bulk deletion
-router.post('/bulk-delete', isAdmin, bulkDelete(User))
+router.delete('/bulk-delete', isAdmin, bulkDelete(User))
 
 
 /**
