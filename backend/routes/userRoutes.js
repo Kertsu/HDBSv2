@@ -6,7 +6,7 @@ const {
   uploadAvatar,
   getNotifications,
   updateSelf,
-  updateRole,
+  updateUser,
   uploadBanner,
   updatePassword,
   updateNotificationSettings,
@@ -50,10 +50,10 @@ router.put('/self/update', protect, upload.single("avatar"),updateSelf)
 router.patch('/self/update_notification_settings', protect, updateNotificationSettings)
 
 // Change password
-router.put('/change_password', protect, updatePassword)
+router.patch('/change-password', protect, updatePassword)
 
-// Update role (admins only)
-router.put('/:id', isAdmin, updateRole)
+// Update a user (admins only)
+router.patch('/:id', isAdmin, updateUser)
 
 // Bulk deletion
 router.post('/bulk-delete', isAdmin, bulkDelete(User))

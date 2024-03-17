@@ -196,7 +196,7 @@ const uploadAvatar = asyncHandler(async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Avatar uploaded successfully"
+      message: "Avatar uploaded successfully",
     });
   });
 });
@@ -227,7 +227,7 @@ const uploadBanner = asyncHandler(async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Banner uploaded successfully"
+      message: "Banner uploaded successfully",
     });
   });
 });
@@ -260,7 +260,7 @@ const getNotifications = asyncHandler(async (req, res) => {
  */
 const updateSelf = asyncHandler(async (req, res) => {
   const { username, description } = req.body;
-  const user = await User.findById(req.user.id);
+  const user = await User.findById(req.user.id).select("-password");
 
   if (!user) {
     res.status(404).json({
@@ -312,40 +312,43 @@ const updateSelf = asyncHandler(async (req, res) => {
 /**
  * Update user role
  */
-const updateRole = asyncHandler(async (req, res) => {
+const updateUser = asyncHandler(async (req, res) => {
+  const { username, role, email } = req.body;
+
   const userToUpdate = await User.findById(req.params.id);
 
   if (!userToUpdate) {
-    res.status(400);
-    throw new Error("User not found");
+    return res.status(400).json({ success: false, error: "User not found" });
   }
 
   const requestingUser = req.user;
 
-  if (userToUpdate._id.equals(requestingUser._id)) {
-    res
-      .status(403)
-      .json({ success: false, error: "You cannot update your own role." });
-    return;
-  }
+  if (requestingUser.role === "superadmin" && userToUpdate.role !== "superadmin" && role !== 'superadmin') {
+    userToUpdate.username = username || userToUpdate.username;
+    userToUpdate.email = email || userToUpdate.email;
+    userToUpdate.role = role || userToUpdate.role;
 
-  if (
+    await userToUpdate.save();
+
+    return res.status(200).json({ success: true, updatedUser: userToUpdate });
+  } else if (
     requestingUser.role === "admin" &&
     userToUpdate.role !== "admin" &&
-    userToUpdate.role !== "superadmin"
+    userToUpdate.role !== "superadmin" && role !== 'superadmin' && role !== 'admin'
   ) {
-    const updatedUser = await User.findByIdAndDelete(req.params.id);
-    res.status(200).json({ success: true, updatedUser });
-  } else if (
-    requestingUser.role === "superadmin" &&
-    userToUpdate.role !== "superadmin"
-  ) {
-    const updatedUser = await User.findByIdAndDelete(req.params.id);
-    res.status(200).json({ success: true, updatedUser });
+    // Admins can update regular users
+    userToUpdate.username = username || userToUpdate.username;
+    userToUpdate.email = email || userToUpdate.email;
+    userToUpdate.role = role || userToUpdate.role;
+
+    await userToUpdate.save();
+
+    return res.status(200).json({ success: true, updatedUser: userToUpdate });
   } else {
-    res.status(403).json({ success: false, error: "Permission denied" });
+    return res.status(403).json({ success: false, error: "Permission denied" });
   }
 });
+
 
 /**
  * Update user password
@@ -417,7 +420,7 @@ const updateNotificationSettings = asyncHandler(async (req, res) => {
  * Fetch all users (admin only)
  */
 const getUsers = asyncHandler(async (req, res) => {
-  console.log(req.query)
+  console.log(req.query);
   try {
     const users = await queryHelper(User, req.query);
 
@@ -439,7 +442,7 @@ module.exports = {
   uploadAvatar,
   getNotifications,
   updateSelf,
-  updateRole,
+  updateUser,
   uploadBanner,
   updatePassword,
   updateNotificationSettings,
