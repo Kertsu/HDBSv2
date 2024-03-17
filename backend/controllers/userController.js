@@ -58,7 +58,7 @@ const register = asyncHandler(async (req, res) => {
     });
 
     res.status(201).json({
-      sucecss: true,
+      success: true,
       user,
     });
   } catch (error) {
@@ -120,7 +120,7 @@ const getSelf = asyncHandler(async (req, res) => {
     await User.findById(req.user.id);
 
   res.status(200).json({
-    sucecss: true,
+    success: true,
     user: {
       id,
       username,
@@ -140,8 +140,7 @@ const deleteUser = asyncHandler(async (req, res) => {
   const userToDelete = await User.findById(req.params.id);
 
   if (!userToDelete) {
-    res.status(400);
-    throw new Error("User not found");
+    res.status(400).json({ success: false, error: "User not found" });
   }
 
   const requestingUser = req.user;
@@ -197,6 +196,7 @@ const uploadAvatar = asyncHandler(async (req, res) => {
 
     res.status(200).json({
       success: true,
+      message: "Avatar uploaded successfully"
     });
   });
 });
@@ -227,6 +227,7 @@ const uploadBanner = asyncHandler(async (req, res) => {
 
     res.status(200).json({
       success: true,
+      message: "Banner uploaded successfully"
     });
   });
 });

@@ -38,10 +38,10 @@ router.get('/self/notifications', protect, getNotifications)
 router.delete("/:id", isAdmin, deleteUser);
 
 // Upload avatar
-router.put("/self/avatar", protect, upload.single("avatar"), uploadAvatar);
+router.patch("/self/avatar", protect, upload.single("avatar"), uploadAvatar);
 
 // Upload banner
-router.put("/self/banner", protect, upload.single("banner"), uploadBanner);
+router.patch("/self/banner", protect, upload.single("banner"), uploadBanner);
 
 // Update self
 router.put('/self/update', protect, upload.single("avatar"),updateSelf)

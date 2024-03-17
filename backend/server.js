@@ -6,15 +6,6 @@ const port = process.env.PORT || 5000;
 const { urlencoded } = require("body-parser");
 const connectDB = require("./config/db");
 const cors = require("cors");
-
-// Models
-const User = require("./models/userModel");
-
-const { protect, isAdmin } = require("./middlewares/authMiddleware");
-const asyncHandler = require("express-async-handler");
-const upload = require("./middlewares/multer");
-const bcrypt = require("bcryptjs");
-const { generateToken } = require("./utils/helpers");
 const { attachSocketMiddleware } = require("./middlewares/socketMiddleware");
 
 connectDB();
@@ -49,7 +40,6 @@ io.on("connection", (socket) => {
   });
 
   socket.on("live", (data) => {
-    // console.log(data);
     addNewUser(data, socket.id);
   });
 
