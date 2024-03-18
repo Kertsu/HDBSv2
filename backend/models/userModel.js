@@ -9,7 +9,6 @@ const userSchema = mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
     },
     email: {
       type: String,
@@ -44,6 +43,12 @@ const userSchema = mongoose.Schema(
       default: "user",
       enum: ["user", "admin", "om", "superadmin"],
     },
+    otp: {
+      type: String
+    },
+    otpExpiration: {
+      type: Date
+    }
   },
   { timestamps: true }
 );

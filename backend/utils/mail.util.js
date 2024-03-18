@@ -1,0 +1,205 @@
+const nodeMailer = require("nodemailer");
+const MailGen = require("mailgen");
+const bcrypt = require("bcryptjs");
+const User = require("../models/userModel");
+
+const setupTransporterAndMailGen = () => {
+  let config = {
+    service: "gmail",
+    auth: {
+      user: process.env.nmEMAIL,
+      pass: process.env.nmPASSWORD,
+    },
+    tls: {
+      rejectUnauthorized: false,
+    },
+  };
+
+  let transporter = nodeMailer.createTransport(config);
+
+  let mailGenerator = new MailGen({
+    theme: "default",
+    product: {
+      name: "Mailgen",
+      link: "https://mailgen.js/",
+    },
+  });
+
+  return { transporter, mailGenerator };
+};
+
+const sendEmail = async (message) => {
+  try {
+    let { transporter } = setupTransporterAndMailGen();
+    await transporter.sendMail(message);
+  } catch (error) {
+    throw new Error("Error sending email: " + error);
+  }
+};
+
+const sendOTP = async (email, name, res) => {
+  const OTP = Math.floor(10000 + Math.random() * 9000).toString();
+  let { mailGenerator } = setupTransporterAndMailGen();
+
+  var emailMessage = {
+    body: {
+      name,
+      intro: `Thank you for signing up with DeskSync! We are thrilled to welcome you on board. Here is your one-time password. Use this OTP to log in. It will expire in 10 minutes. Please do not share this with anyone: <h1>${OTP}</h1>`,
+      outro:
+        "Do you need assistance or have any questions? Feel free to reach out to our Tech Lead at <i>kurtddbigtas@gmail.com</i>. We are here to help.",
+    },
+  };
+
+  let mail = mailGenerator.generate(emailMessage);
+
+  let message = {
+    from: process.env.nmEMAIL,
+    to: email,
+    subject: "eMachine Hotdesk Booking System OTP",
+    html: mail,
+  };
+
+  try {
+    
+    const salt = await bcrypt.genSalt(10);
+    const hashedOTP = await bcrypt.hash(OTP, salt);
+    const expirationTime = new Date(Date.now() + 10 * 60 * 1000);
+    
+    const user = await User.create({
+      username: name,
+      email,
+      otp: hashedOTP,
+      otpExpiration: expirationTime,
+    });
+    
+    if (user) {
+      await sendEmail(message);
+      return res.status(201).json({
+        success: true,
+        user: {
+          id: user.id,
+          role: user.role,
+          username: user.username,
+          email: user.email,
+          otp: OTP,
+          otpExpiration: expirationTime,
+        },
+      });
+    } else {
+      res.status(400);
+      throw new Error("Invalid user data");
+    }
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "An error occurred." });
+  }
+};
+
+const resendVerificationCodeMail = async (email, name, res) => {
+  const verificationCode = Math.floor(10000 + Math.random() * 9000).toString();
+  let { mailGenerator } = setupTransporterAndMailGen();
+
+  var emailMessage = {
+    body: {
+      name,
+      intro: `Thank you for signing up with DeskSync! We are thrilled to welcome you on board. Here is your verification code. Please do not share this with anyone: <h1>${verificationCode}</h1>`,
+      outro:
+        "Do you need assistance or have any questions? Feel free to reach out to our Tech Lead at <i>kurtddbigtas@gmail.com</i>. We are here to help.",
+    },
+  };
+
+  let mail = mailGenerator.generate(emailMessage);
+
+  let message = {
+    from: process.env.nmEMAIL,
+    to: email,
+    subject: "eMachine Hotdesk Booking System Verification Code",
+    html: mail,
+  };
+
+  try {
+    await sendEmail(message);
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedVerificationCode = await bcrypt.hash(verificationCode, salt);
+
+    const updatedUser = await User.findOneAndUpdate(
+      { email },
+      { verificationCode: hashedVerificationCode }
+    );
+
+    if (updatedUser) {
+      return res.status(200).json({
+        message: `Verification code has been resent to ${email}`,
+      });
+    } else {
+      throw new Error("User not found");
+    }
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "An error occurred." });
+  }
+};
+
+const sendApplicationSuccess = async (email, name) => {
+  let { transporter, mailGenerator } = setupTransporterAndMailGen();
+
+  var emailMessage = {
+    body: {
+      name,
+      intro: `We are delighted to inform you that your application has been approved by our team of administrators, and your account is now fully activated.`,
+      outro:
+        "Do you need assistance or have any questions? Feel free to reach out to our Tech Lead at <i>kurtddbigtas@gmail.com</i>. We are here to help.",
+    },
+  };
+
+  let mail = mailGenerator.generate(emailMessage);
+
+  let message = {
+    from: process.env.nmEMAIL,
+    to: email,
+    subject: "eMachine Hotdesk Booking System Application Success",
+    html: mail,
+  };
+
+  try {
+    await sendEmail(message);
+  } catch (error) {
+    console.error("Error sending email: " + error);
+  }
+};
+
+const sendReservationApproved = async (email, name, deskNumber) => {
+  let { transporter, mailGenerator } = setupTransporterAndMailGen();
+
+  var emailMessage = {
+    body: {
+      name,
+      intro: `We are pleased to inform you that your reservation application for <strong>Desk ${deskNumber}</strong> has been approved. Have a great day ahead!`,
+      outro:
+        "Do you need assistance or have any questions? Feel free to reach out to our Tech Lead at <i>kurtddbigtas@gmail.com</i>. We are here to help.",
+    },
+  };
+
+  let mail = mailGenerator.generate(emailMessage);
+
+  let message = {
+    from: process.env.nmEMAIL,
+    to: email,
+    subject: "eMachine Hotdesk Booking System Reservation Approved",
+    html: mail,
+  };
+
+  try {
+    await sendEmail(message);
+  } catch (error) {
+    console.error("Error sending email: " + error);
+  }
+};
+
+module.exports = {
+  sendOTP,
+  resendVerificationCodeMail,
+  sendApplicationSuccess,
+  sendReservationApproved,
+};

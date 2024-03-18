@@ -13,13 +13,14 @@ const User = require("../models/userModel");
 const Notification = require("../models/notificationModel");
 const cloudinary = require("../config/cloudinary");
 const queryHelper = require("../utils/queryHelper");
+const {  sendOTP } = require("../utils/mail.util");
 /**
  * Register a user
  */
 const register = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
+  const { email } = req.body;
 
-  if (!email || !password) {
+  if (!email) {
     return res.status(400).json({
       success: false,
       error: "Please fill in all mandatory fields",
@@ -35,32 +36,22 @@ const register = asyncHandler(async (req, res) => {
     });
   }
 
-  if (!isValidEmail(email)) {
-    return res.status(400).json({ success: false, error: "Email not allowed" });
-  }
+  // if (!isValidEmail(email)) {
+  //   return res.status(400).json({ success: false, error: "Email not allowed" });
+  // }
 
-  if (password.length < 10 || !isValidPassword(password)) {
-    return res.status(400).json({
-      success: false,
-      error:
-        "Invalid password. It should be at least 10 characters long and contain a mix of alphanumeric and special characters",
-    });
-  }
+  // if (password.length < 10 || !isValidPassword(password)) {
+  //   return res.status(400).json({
+  //     success: false,
+  //     error:
+  //       "Invalid password. It should be at least 10 characters long and contain a mix of alphanumeric and special characters",
+  //   });
+  // }
 
-  const hashedPassword = await hashPassword(password);
   const username = email.split("@")[0];
 
   try {
-    const user = await User.create({
-      username,
-      email,
-      password: hashedPassword,
-    });
-
-    res.status(201).json({
-      success: true,
-      user,
-    });
+    sendOTP(email, username, res)
   } catch (error) {
     res.status(400).json({
       success: false,
