@@ -341,7 +341,6 @@ const updateUser = asyncHandler(async (req, res) => {
   }
 });
 
-
 /**
  * Update user password
  */
@@ -426,6 +425,61 @@ const getUsers = asyncHandler(async (req, res) => {
   }
 });
 
+
+const firstChangePassword = asyncHandler(async (req, res) => {
+  console.log(req.user.id)
+  const { password, confirmPassword } = req.body;
+  const user = await User.findById(req.user.id);
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      error: "User not found",
+    });
+  }
+
+  if(user.passwordChangedAt !== null){
+    return res.status(400).json({
+      success: false,
+      error: "Invalid action",
+    });
+  }
+
+  if (password !== confirmPassword) {
+    return res.status(400).json({
+      success: false,
+      error: "Passwords did not match",
+    });
+  }
+
+  const passwordRegex =
+    /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+}{"':;?/>.<,]).{10,}$/;
+  if (!passwordRegex.test(password)) {
+    return res.status(400).json({
+      success: false,
+      error:
+        "Password should be at least 10 characters long and include letters, numbers, and symbols.",
+    });
+  }
+
+  const hashedPassword = await hashPassword(password);
+
+  user.password = hashedPassword;
+  user.passwordChangedAt = Date.now();
+
+  try {
+    await user.save();
+    res
+      .status(200)
+      .json({ success: true, message: "Password updated successfully" });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: "Error updating password",
+    });
+  }
+})
+
 module.exports = {
   register,
   authenticate,
@@ -439,4 +493,5 @@ module.exports = {
   updatePassword,
   updateNotificationSettings,
   getUsers,
+  firstChangePassword
 };

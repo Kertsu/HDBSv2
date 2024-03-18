@@ -11,6 +11,7 @@ const {
   updatePassword,
   updateNotificationSettings,
   getUsers,
+  firstChangePassword,
 } = require("../controllers/userController");
 const { protect, isAdmin } = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/multer");
@@ -51,6 +52,9 @@ router.patch('/self/update_notification_settings', protect, updateNotificationSe
 
 // Change password
 router.patch('/change-password', protect, updatePassword)
+
+// First change password
+router.put('/first-change-password', protect, firstChangePassword)
 
 // Update a user (admins only)
 router.patch('/:id', isAdmin, updateUser)

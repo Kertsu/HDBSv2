@@ -50,7 +50,7 @@ const bulkDelete = (model) => asyncHandler(async (req, res) => {
 
 
 const generatePassword = () => {
-  const length = 10,
+  const length = 15,
     charset =
       'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let retVal = '';
