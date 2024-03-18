@@ -23,7 +23,7 @@ const router = require("express").Router();
 router.get('/', isAdmin, getUsers)
 
 // Register user
-router.post("/register", register);
+router.post("/register",isAdmin, register);
 
 // Authenticate user
 router.post("/login", authenticate);

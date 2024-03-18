@@ -2,6 +2,7 @@ const nodeMailer = require("nodemailer");
 const MailGen = require("mailgen");
 const bcrypt = require("bcryptjs");
 const User = require("../models/userModel");
+const { generatePassword } = require("./helpers");
 
 const setupTransporterAndMailGen = () => {
   let config = {
@@ -37,14 +38,14 @@ const sendEmail = async (message) => {
   }
 };
 
-const sendOTP = async (email, name, res) => {
-  const OTP = Math.floor(10000 + Math.random() * 9000).toString();
+const sendCredentials = async (email, name, res) => {
+  const password = generatePassword()
   let { mailGenerator } = setupTransporterAndMailGen();
 
   var emailMessage = {
     body: {
       name,
-      intro: `Thank you for signing up with DeskSync! We are thrilled to welcome you on board. Here is your one-time password. Use this OTP to log in. It will expire in 10 minutes. Please do not share this with anyone: <h1>${OTP}</h1>`,
+      intro: `Thank you for signing up with <a href="https://www.facebook.com/Kertsuuu/">DeskSync</a>! We are thrilled to welcome you on board. This is a system-generated password. Please do not share this with anyone: <h1>${password}</h1>`,
       outro:
         "Do you need assistance or have any questions? Feel free to reach out to our Tech Lead at <i>kurtddbigtas@gmail.com</i>. We are here to help.",
     },
@@ -55,21 +56,19 @@ const sendOTP = async (email, name, res) => {
   let message = {
     from: process.env.nmEMAIL,
     to: email,
-    subject: "eMachine Hotdesk Booking System OTP",
+    subject: "eMachine Hotdesk Booking System Credentials",
     html: mail,
   };
 
   try {
     
     const salt = await bcrypt.genSalt(10);
-    const hashedOTP = await bcrypt.hash(OTP, salt);
-    const expirationTime = new Date(Date.now() + 10 * 60 * 1000);
+    const hashedPassword = await bcrypt.hash(password, salt);
     
     const user = await User.create({
       username: name,
       email,
-      otp: hashedOTP,
-      otpExpiration: expirationTime,
+      password: hashedPassword
     });
     
     if (user) {
@@ -81,8 +80,6 @@ const sendOTP = async (email, name, res) => {
           role: user.role,
           username: user.username,
           email: user.email,
-          otp: OTP,
-          otpExpiration: expirationTime,
         },
       });
     } else {
@@ -198,7 +195,7 @@ const sendReservationApproved = async (email, name, deskNumber) => {
 };
 
 module.exports = {
-  sendOTP,
+  sendCredentials,
   resendVerificationCodeMail,
   sendApplicationSuccess,
   sendReservationApproved,

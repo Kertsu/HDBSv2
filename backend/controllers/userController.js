@@ -13,7 +13,7 @@ const User = require("../models/userModel");
 const Notification = require("../models/notificationModel");
 const cloudinary = require("../config/cloudinary");
 const queryHelper = require("../utils/queryHelper");
-const {  sendOTP } = require("../utils/mail.util");
+const { sendCredentials } = require("../utils/mail.util");
 /**
  * Register a user
  */
@@ -51,7 +51,7 @@ const register = asyncHandler(async (req, res) => {
   const username = email.split("@")[0];
 
   try {
-    sendOTP(email, username, res)
+    sendCredentials(email, username, res)
   } catch (error) {
     res.status(400).json({
       success: false,
