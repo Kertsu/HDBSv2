@@ -51,7 +51,7 @@ const register = asyncHandler(async (req, res) => {
   const username = email.split("@")[0];
 
   try {
-    sendCredentials(email, username, res)
+    sendCredentials(email, username, res);
   } catch (error) {
     res.status(400).json({
       success: false,
@@ -92,7 +92,7 @@ const authenticate = asyncHandler(async (req, res) => {
       token: generateToken(user.id),
       receivingEmail: user.receivingEmail,
       description: user.description,
-      passwordChangedAt: user.passwordChangedAt
+      passwordChangedAt: user.passwordChangedAt,
     };
 
     res.status(200).json({
@@ -315,7 +315,11 @@ const updateUser = asyncHandler(async (req, res) => {
 
   const requestingUser = req.user;
 
-  if (requestingUser.role === "superadmin" && userToUpdate.role !== "superadmin" && role !== 'superadmin') {
+  if (
+    requestingUser.role === "superadmin" &&
+    userToUpdate.role !== "superadmin" &&
+    role !== "superadmin"
+  ) {
     userToUpdate.username = username || userToUpdate.username;
     userToUpdate.email = email || userToUpdate.email;
     userToUpdate.role = role || userToUpdate.role;
@@ -326,7 +330,9 @@ const updateUser = asyncHandler(async (req, res) => {
   } else if (
     requestingUser.role === "admin" &&
     userToUpdate.role !== "admin" &&
-    userToUpdate.role !== "superadmin" && role !== 'superadmin' && role !== 'admin'
+    userToUpdate.role !== "superadmin" &&
+    role !== "superadmin" &&
+    role !== "admin"
   ) {
     // Admins can update regular users
     userToUpdate.username = username || userToUpdate.username;
@@ -352,6 +358,22 @@ const updatePassword = asyncHandler(async (req, res) => {
     return res.status(404).json({
       success: false,
       error: "User not found",
+    });
+  }
+
+  const oneDay = 24 * 60 * 60 * 1000;
+
+  const passwordChangedAt = new Date(user.passwordChangedAt).getTime();
+  const currentTime = new Date().getTime();
+
+  const cooldownRemaining = Math.ceil(
+    (passwordChangedAt + oneDay - currentTime) / (60 * 60 * 1000)
+  );
+
+  if (currentTime - passwordChangedAt < oneDay) {
+    return res.status(400).json({
+      success: false,
+      error: `Change password in cooldown. ${cooldownRemaining} hours remaining.`,
     });
   }
 
@@ -425,9 +447,11 @@ const getUsers = asyncHandler(async (req, res) => {
   }
 });
 
-
+/**
+ * Change password at first login
+ */
 const firstChangePassword = asyncHandler(async (req, res) => {
-  console.log(req.user.id)
+  console.log(req.user.id);
   const { password, confirmPassword } = req.body;
   const user = await User.findById(req.user.id);
 
@@ -438,7 +462,7 @@ const firstChangePassword = asyncHandler(async (req, res) => {
     });
   }
 
-  if(user.passwordChangedAt !== null){
+  if (user.passwordChangedAt !== null) {
     return res.status(400).json({
       success: false,
       error: "Invalid action",
@@ -478,7 +502,7 @@ const firstChangePassword = asyncHandler(async (req, res) => {
       error: "Error updating password",
     });
   }
-})
+});
 
 module.exports = {
   register,
@@ -493,5 +517,5 @@ module.exports = {
   updatePassword,
   updateNotificationSettings,
   getUsers,
-  firstChangePassword
+  firstChangePassword,
 };
