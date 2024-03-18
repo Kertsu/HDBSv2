@@ -92,6 +92,7 @@ const authenticate = asyncHandler(async (req, res) => {
       token: generateToken(user.id),
       receivingEmail: user.receivingEmail,
       description: user.description,
+      passwordChangedAt: user.passwordChangedAt
     };
 
     res.status(200).json({
