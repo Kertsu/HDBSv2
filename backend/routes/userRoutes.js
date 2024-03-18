@@ -12,6 +12,7 @@ const {
   updateNotificationSettings,
   getUsers,
   firstChangePassword,
+  handleUser,
 } = require("../controllers/userController");
 const { protect, isAdmin } = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/multer");
@@ -62,6 +63,8 @@ router.patch('/:id', isAdmin, updateUser)
 // Bulk deletion
 router.delete('/bulk-delete', isAdmin, bulkDelete(User))
 
+// Disable/enable user
+router.patch('/:id/action/:action', isAdmin, handleUser)
 
 /**
  * @TODO

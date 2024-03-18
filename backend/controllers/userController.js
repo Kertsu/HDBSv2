@@ -36,17 +36,17 @@ const register = asyncHandler(async (req, res) => {
     });
   }
 
-  // if (!isValidEmail(email)) {
-  //   return res.status(400).json({ success: false, error: "Email not allowed" });
-  // }
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ success: false, error: "Email not allowed" });
+  }
 
-  // if (password.length < 10 || !isValidPassword(password)) {
-  //   return res.status(400).json({
-  //     success: false,
-  //     error:
-  //       "Invalid password. It should be at least 10 characters long and contain a mix of alphanumeric and special characters",
-  //   });
-  // }
+  if (password.length < 10 || !isValidPassword(password)) {
+    return res.status(400).json({
+      success: false,
+      error:
+        "Invalid password. It should be at least 10 characters long and contain a mix of alphanumeric and special characters",
+    });
+  }
 
   const username = email.split("@")[0];
 
@@ -504,6 +504,55 @@ const firstChangePassword = asyncHandler(async (req, res) => {
   }
 });
 
+/**
+ * Disable or enable a user
+ */
+const handleUser = asyncHandler(async (req, res) => {
+  const { id, action } = req.params;
+  const userToUpdate = await User.findById(id);
+  const requestingUser = await User.findById(req.user.id);
+
+  if (!userToUpdate) {
+    return res.status(400).json({ success: false, error: "User not found" });
+  }
+
+  if (userToUpdate.id === requestingUser.id) {
+    return res.status(400).json({ success: false, error: "Invalid action" });
+  }
+
+  const isAdmin = requestingUser.role === "admin";
+  const isSuperAdmin = requestingUser.role === "superadmin";
+  const isRegularUser = userToUpdate.role === "user" || userToUpdate.role === "om" ;
+
+  if ((isSuperAdmin && !isRegularUser) || (isAdmin && !isRegularUser && !isSuperAdmin)) {
+    let updatedUser;
+    let message;
+
+    if (action === "disable") {
+      if (!userToUpdate.isDisabled) {
+        updatedUser = await User.findByIdAndUpdate(id, { isDisabled: true }, { new: true }).select("-password");
+        message = `${updatedUser.username} is now disabled`;
+      } else {
+        return res.status(400).json({ success: false, message: "Invalid action" });
+      }
+    } else if (action === "enable") {
+      if (userToUpdate.isDisabled) {
+        updatedUser = await User.findByIdAndUpdate(id, { isDisabled: false }, { new: true }).select("-password");
+        message = `${updatedUser.username} is now enabled`;
+      } else {
+        return res.status(400).json({ success: false, message: "Invalid action" });
+      }
+    } else {
+      return res.status(400).json({ success: false, message: "Invalid action" });
+    }
+
+    return res.status(200).json({ success: true, message });
+  } else {
+    return res.status(403).json({ success: false, error: "Permission denied" });
+  }
+});
+
+
 module.exports = {
   register,
   authenticate,
@@ -518,4 +567,5 @@ module.exports = {
   updateNotificationSettings,
   getUsers,
   firstChangePassword,
+  handleUser,
 };
