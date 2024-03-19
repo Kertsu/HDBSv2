@@ -13,6 +13,7 @@ const {
   getUsers,
   firstChangePassword,
   handleUser,
+  forgotPassword,
 } = require("../controllers/userController");
 const { protect, isAdmin } = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/multer");
@@ -49,7 +50,7 @@ router.patch("/self/banner", protect, upload.single("banner"), uploadBanner);
 router.put('/self/update', protect, upload.single("avatar"),updateSelf)
 
 // Update receiving email preference
-router.patch('/self/update_notification_settings', protect, updateNotificationSettings)
+router.patch('/self/update-notification-settings', protect, updateNotificationSettings)
 
 // Change password
 router.patch('/change-password', protect, updatePassword)
@@ -66,11 +67,11 @@ router.delete('/bulk-delete', isAdmin, bulkDelete(User))
 // Disable/enable user
 router.patch('/:id/action/:action', isAdmin, handleUser)
 
-/**
- * @TODO
- * forgot password
- * reset password
- */
+// Send a reset password link to the user
+router.post('/forgot-password', forgotPassword)
+
+// // Reset the user's password
+// router.patch('/reset-password', )
 
 
 module.exports = router;

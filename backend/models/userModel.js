@@ -22,9 +22,13 @@ const userSchema = mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    resetToken: {
-      type: String,
-      expiresAt: Date,
+    passwordResetToken: {
+      token: {
+        type: String
+      },
+      expiresAt: {
+        type: Date
+      }
     },
     avatar: {
       type: String,

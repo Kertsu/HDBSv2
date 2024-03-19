@@ -4,16 +4,14 @@ const bcrypt = require("bcryptjs");
 
 const {
   generateToken,
-  isValidPassword,
   hashPassword,
-  isValidEmail,
 } = require("../utils/helpers");
 
 const User = require("../models/userModel");
 const Notification = require("../models/notificationModel");
 const cloudinary = require("../config/cloudinary");
 const queryHelper = require("../utils/queryHelper");
-const { sendCredentials } = require("../utils/mail.util");
+const { sendCredentials, sendMagicLink } = require("../utils/mail.util");
 /**
  * Register a user
  */
@@ -36,17 +34,17 @@ const register = asyncHandler(async (req, res) => {
     });
   }
 
-  if (!isValidEmail(email)) {
-    return res.status(400).json({ success: false, error: "Email not allowed" });
-  }
+  // if (!isValidEmail(email)) {
+  //   return res.status(400).json({ success: false, error: "Email not allowed" });
+  // }
 
-  if (password.length < 10 || !isValidPassword(password)) {
-    return res.status(400).json({
-      success: false,
-      error:
-        "Invalid password. It should be at least 10 characters long and contain a mix of alphanumeric and special characters",
-    });
-  }
+  // if (password.length < 10 || !isValidPassword(password)) {
+  //   return res.status(400).json({
+  //     success: false,
+  //     error:
+  //       "Invalid password. It should be at least 10 characters long and contain a mix of alphanumeric and special characters",
+  //   });
+  // }
 
   const username = email.split("@")[0];
 
@@ -552,6 +550,33 @@ const handleUser = asyncHandler(async (req, res) => {
   }
 });
 
+/**
+ * Create token for the associated email
+ */
+const forgotPassword = asyncHandler(async (req, res) => {
+
+  const {email} = req.body
+
+  const user = await User.findOne({email})
+
+  if(!user){
+    res.status(400).json({ success: false, error: "User not found" });
+  }
+
+  if (!email){
+    res.status(400).json({ success: false, error: "Missing required fields" });
+  }
+
+  try {
+    sendMagicLink(user, res)
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      error: "Invalid user data",
+    });
+  }
+})
+
 
 module.exports = {
   register,
@@ -568,4 +593,5 @@ module.exports = {
   getUsers,
   firstChangePassword,
   handleUser,
+  forgotPassword
 };

@@ -2,6 +2,7 @@ const nodeMailer = require("nodemailer");
 const MailGen = require("mailgen");
 const bcrypt = require("bcryptjs");
 const User = require("../models/userModel");
+const crypto = require('crypto')
 const { generatePassword } = require("./helpers");
 
 const setupTransporterAndMailGen = () => {
@@ -92,6 +93,56 @@ const sendCredentials = async (email, name, res) => {
   }
 };
 
+const sendMagicLink = async (user, res) => {
+  let { mailGenerator } = setupTransporterAndMailGen();
+  const token = crypto.randomBytes(32).toString('hex');
+
+  const link = `http://localhost:4200/change-password?token=${token}&id=${user.id}`
+
+  var emailMessage = {
+    body: {
+      name: user.username,
+      intro: `You recently requested a password reset for your account. This link will expire in 10 minutes. Please use the following link to reset your password:<br/><br/> <a href=${link} target="_blank">Reset password</a><br/><br/><strong>If you did not initiate this request or have any concerns, please contact us immediately.</strong>`,
+      outro:
+        "Do you need assistance or have any questions? Feel free to reach out to our Tech Lead at <i>kurtddbigtas@gmail.com</i>. We are here to help.",
+    },
+  };
+
+  let mail = mailGenerator.generate(emailMessage);
+
+  let message = {
+    from: process.env.nmEMAIL,
+    to: user.email,
+    subject: "Password Reset",
+    html: mail,
+  };
+
+  try {
+
+    const salt = await bcrypt.genSalt(10)
+    const hashedToken = await bcrypt.hash(token, salt);
+    
+    const expiration = Date.now() + (10*60*1000)
+
+    user.passwordResetToken.token = hashedToken
+    user.passwordResetToken.expiresAt = expiration
+
+    await sendEmail(message)
+    await user.save()
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset link has been sent to your email"
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "An error occurred." });
+  }
+}
+
+
+
+//
 const resendVerificationCodeMail = async (email, name, res) => {
   const verificationCode = Math.floor(10000 + Math.random() * 9000).toString();
   let { mailGenerator } = setupTransporterAndMailGen();
@@ -199,4 +250,5 @@ module.exports = {
   resendVerificationCodeMail,
   sendApplicationSuccess,
   sendReservationApproved,
+  sendMagicLink
 };
