@@ -14,19 +14,20 @@ const {
   firstChangePassword,
   handleUser,
   forgotPassword,
+  resetPassword,
 } = require("../controllers/userController");
 const { protect, isAdmin } = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/multer");
 const { bulkDelete } = require("../utils/helpers");
-const User = require('../models/userModel')
+const User = require("../models/userModel");
 
 const router = require("express").Router();
 
 // Get all users (Admin only)
-router.get('/', isAdmin, getUsers)
+router.get("/", isAdmin, getUsers);
 
 // Register user
-router.post("/register",isAdmin, register);
+router.post("/register", isAdmin, register);
 
 // Authenticate user
 router.post("/login", authenticate);
@@ -35,7 +36,7 @@ router.post("/login", authenticate);
 router.get("/self", protect, getSelf);
 
 // Get self nofitications
-router.get('/self/notifications', protect, getNotifications)
+router.get("/self/notifications", protect, getNotifications);
 
 // Delete user
 router.delete("/:id", isAdmin, deleteUser);
@@ -47,31 +48,36 @@ router.patch("/self/avatar", protect, upload.single("avatar"), uploadAvatar);
 router.patch("/self/banner", protect, upload.single("banner"), uploadBanner);
 
 // Update self
-router.put('/self/update', protect, upload.single("avatar"),updateSelf)
+router.put("/self/update", protect, upload.single("avatar"), updateSelf);
 
 // Update receiving email preference
-router.patch('/self/update-notification-settings', protect, updateNotificationSettings)
+router.patch(
+  "/self/update-notification-settings",
+  protect,
+  updateNotificationSettings
+);
 
 // Change password
-router.patch('/change-password', protect, updatePassword)
+router.patch("/change-password", protect, updatePassword);
+
+// Reset the user's password
+router.patch('/reset-password/:token/:id', resetPassword)
 
 // First change password
-router.put('/first-change-password', protect, firstChangePassword)
+router.put("/first-change-password", protect, firstChangePassword);
 
 // Update a user (admins only)
-router.patch('/:id', isAdmin, updateUser)
+router.patch("/:id", isAdmin, updateUser);
 
 // Bulk deletion
-router.delete('/bulk-delete', isAdmin, bulkDelete(User))
+router.delete("/bulk-delete", isAdmin, bulkDelete(User));
 
 // Disable/enable user
-router.patch('/:id/action/:action', isAdmin, handleUser)
+router.patch("/:id/action/:action", isAdmin, handleUser);
 
 // Send a reset password link to the user
-router.post('/forgot-password', forgotPassword)
+router.post("/forgot-password", forgotPassword);
 
-// // Reset the user's password
-// router.patch('/reset-password', )
 
 
 module.exports = router;

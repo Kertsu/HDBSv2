@@ -2,10 +2,7 @@ const asyncHandler = require("express-async-handler");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 
-const {
-  generateToken,
-  hashPassword,
-} = require("../utils/helpers");
+const { generateToken, hashPassword, isValidPassword } = require("../utils/helpers");
 
 const User = require("../models/userModel");
 const Notification = require("../models/notificationModel");
@@ -390,9 +387,7 @@ const updatePassword = asyncHandler(async (req, res) => {
     });
   }
 
-  const passwordRegex =
-    /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+}{"':;?/>.<,]).{10,}$/;
-  if (!passwordRegex.test(newPassword)) {
+  if (!isValidPassword(newPassword)) {
     return res.status(400).json({
       success: false,
       error:
@@ -474,9 +469,8 @@ const firstChangePassword = asyncHandler(async (req, res) => {
     });
   }
 
-  const passwordRegex =
-    /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+}{"':;?/>.<,]).{10,}$/;
-  if (!passwordRegex.test(password)) {
+ 
+  if (!isValidPassword(password)) {
     return res.status(400).json({
       success: false,
       error:
@@ -520,28 +514,44 @@ const handleUser = asyncHandler(async (req, res) => {
 
   const isAdmin = requestingUser.role === "admin";
   const isSuperAdmin = requestingUser.role === "superadmin";
-  const isRegularUser = userToUpdate.role === "user" || userToUpdate.role === "om" ;
+  const isRegularUser =
+    userToUpdate.role === "user" || userToUpdate.role === "om";
 
-  if ((isSuperAdmin && !isRegularUser) || (isAdmin && !isRegularUser && !isSuperAdmin)) {
+  if (
+    (isSuperAdmin && !isRegularUser) ||
+    (isAdmin && !isRegularUser && !isSuperAdmin)
+  ) {
     let updatedUser;
     let message;
 
     if (action === "disable") {
       if (!userToUpdate.isDisabled) {
-        updatedUser = await User.findByIdAndUpdate(id, { isDisabled: true }, { new: true }).select("-password");
+        updatedUser = await User.findByIdAndUpdate(
+          id,
+          { isDisabled: true },
+          { new: true }
+        ).select("-password");
         message = `${updatedUser.username} is now disabled`;
       } else {
-        return res.status(400).json({ success: false, message: "Invalid action" });
+        return res
+          .status(400)
+          .json({ success: false, error: "Invalid action" });
       }
     } else if (action === "enable") {
       if (userToUpdate.isDisabled) {
-        updatedUser = await User.findByIdAndUpdate(id, { isDisabled: false }, { new: true }).select("-password");
+        updatedUser = await User.findByIdAndUpdate(
+          id,
+          { isDisabled: false },
+          { new: true }
+        ).select("-password");
         message = `${updatedUser.username} is now enabled`;
       } else {
-        return res.status(400).json({ success: false, message: "Invalid action" });
+        return res
+          .status(400)
+          .json({ success: false, error: "Invalid action" });
       }
     } else {
-      return res.status(400).json({ success: false, message: "Invalid action" });
+      return res.status(400).json({ success: false, error: "Invalid action" });
     }
 
     return res.status(200).json({ success: true, message });
@@ -554,28 +564,105 @@ const handleUser = asyncHandler(async (req, res) => {
  * Create token for the associated email
  */
 const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
 
-  const {email} = req.body
+  const user = await User.findOne({ email });
 
-  const user = await User.findOne({email})
-
-  if(!user){
+  if (!user) {
     res.status(400).json({ success: false, error: "User not found" });
   }
 
-  if (!email){
+  if (!email) {
     res.status(400).json({ success: false, error: "Missing required fields" });
   }
 
   try {
-    sendMagicLink(user, res)
+    sendMagicLink(user, res);
   } catch (error) {
     res.status(400).json({
       success: false,
       error: "Invalid user data",
     });
   }
-})
+});
+
+/**
+ * Reset user's password
+ */
+const resetPassword = asyncHandler(async (req, res) => {
+  const { token, id } = req.params;
+  const { password, confirmPassword } = req.body;
+
+  const user = await User.findById(id);
+
+  if (!user) {
+    return res.status(400).json({
+      success: false,
+      error: "User not found",
+    });
+  }
+
+  const { passwordResetToken } = user;
+  const tokenValid = await bcrypt.compare(token, passwordResetToken.token);
+  const tokenExpired = passwordResetToken.expiresAt < Date.now();
+
+  if (!tokenValid) {
+    return res.status(400).json({
+      success: false,
+      error: "Invalid reset token",
+    });
+  }
+
+  if (tokenExpired) {
+    return res.status(400).json({
+      success: false,
+      error: "Reset token expired",
+    });
+  }
+
+  if (password !== confirmPassword) {
+    return res.status(400).json({
+      success: false,
+      error: "Passwords did not match",
+    });
+  }
+
+  const oneDay = 24 * 60 * 60 * 1000;
+  const passwordChangedAt = new Date(user.passwordChangedAt).getTime();
+  const currentTime = new Date().getTime();
+  const cooldownRemaining = Math.ceil((passwordChangedAt + oneDay - currentTime) / (60 * 60 * 1000));
+
+  if (currentTime - passwordChangedAt < oneDay) {
+    return res.status(400).json({
+      success: false,
+      error: `Change password in cooldown. ${cooldownRemaining} hours remaining.`,
+    });
+  }
+
+  if (!isValidPassword(password)) {
+    return res.status(400).json({
+      success: false,
+      error: "Password should be at least 10 characters long and include letters, numbers, and symbols.",
+    });
+  }
+
+  user.password = password;
+  user.passwordChangedAt = Date.now();
+  user.passwordResetToken = undefined;
+
+  try {
+    await user.save();
+    return res.status(200).json({
+      success: true,
+      error: "Password changed",
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      error: "An error occurred.",
+    });
+  }
+});
 
 
 module.exports = {
@@ -593,5 +680,6 @@ module.exports = {
   getUsers,
   firstChangePassword,
   handleUser,
-  forgotPassword
+  forgotPassword,
+  resetPassword,
 };
