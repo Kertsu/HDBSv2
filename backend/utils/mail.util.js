@@ -140,17 +140,16 @@ const sendMagicLink = async (user, res) => {
   }
 }
 
-
-
-//
-const resendVerificationCodeMail = async (email, name, res) => {
-  const verificationCode = Math.floor(10000 + Math.random() * 9000).toString();
+const sendPasswordResetSuccess = async (user, res) => {
   let { mailGenerator } = setupTransporterAndMailGen();
+  const token = crypto.randomBytes(32).toString('hex');
+
+  const link = `http://localhost:4200/change-password?token=${token}&id=${user.id}`
 
   var emailMessage = {
     body: {
-      name,
-      intro: `Thank you for signing up with DeskSync! We are thrilled to welcome you on board. Here is your verification code. Please do not share this with anyone: <h1>${verificationCode}</h1>`,
+      name: user.username,
+      intro: `Your password has been successfully changed. You can now log in to your account with your new password.`,
       outro:
         "Do you need assistance or have any questions? Feel free to reach out to our Tech Lead at <i>kurtddbigtas@gmail.com</i>. We are here to help.",
     },
@@ -160,95 +159,129 @@ const resendVerificationCodeMail = async (email, name, res) => {
 
   let message = {
     from: process.env.nmEMAIL,
-    to: email,
-    subject: "eMachine Hotdesk Booking System Verification Code",
+    to: user.email,
+    subject: "Password Reset Successfully",
     html: mail,
   };
 
   try {
-    await sendEmail(message);
-
-    const salt = await bcrypt.genSalt(10);
-    const hashedVerificationCode = await bcrypt.hash(verificationCode, salt);
-
-    const updatedUser = await User.findOneAndUpdate(
-      { email },
-      { verificationCode: hashedVerificationCode }
-    );
-
-    if (updatedUser) {
-      return res.status(200).json({
-        message: `Verification code has been resent to ${email}`,
-      });
-    } else {
-      throw new Error("User not found");
-    }
+    await sendEmail(message)
+    await user.save();
+    return res.status(200).json({
+      success: true,
+      error: "Password changed",
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: "An error occurred." });
   }
-};
+}
 
-const sendApplicationSuccess = async (email, name) => {
-  let { transporter, mailGenerator } = setupTransporterAndMailGen();
+//
+// const resendVerificationCodeMail = async (email, name, res) => {
+//   const verificationCode = Math.floor(10000 + Math.random() * 9000).toString();
+//   let { mailGenerator } = setupTransporterAndMailGen();
 
-  var emailMessage = {
-    body: {
-      name,
-      intro: `We are delighted to inform you that your application has been approved by our team of administrators, and your account is now fully activated.`,
-      outro:
-        "Do you need assistance or have any questions? Feel free to reach out to our Tech Lead at <i>kurtddbigtas@gmail.com</i>. We are here to help.",
-    },
-  };
+//   var emailMessage = {
+//     body: {
+//       name,
+//       intro: `Thank you for signing up with DeskSync! We are thrilled to welcome you on board. Here is your verification code. Please do not share this with anyone: <h1>${verificationCode}</h1>`,
+//       outro:
+//         "Do you need assistance or have any questions? Feel free to reach out to our Tech Lead at <i>kurtddbigtas@gmail.com</i>. We are here to help.",
+//     },
+//   };
 
-  let mail = mailGenerator.generate(emailMessage);
+//   let mail = mailGenerator.generate(emailMessage);
 
-  let message = {
-    from: process.env.nmEMAIL,
-    to: email,
-    subject: "eMachine Hotdesk Booking System Application Success",
-    html: mail,
-  };
+//   let message = {
+//     from: process.env.nmEMAIL,
+//     to: email,
+//     subject: "eMachine Hotdesk Booking System Verification Code",
+//     html: mail,
+//   };
 
-  try {
-    await sendEmail(message);
-  } catch (error) {
-    console.error("Error sending email: " + error);
-  }
-};
+//   try {
+//     await sendEmail(message);
 
-const sendReservationApproved = async (email, name, deskNumber) => {
-  let { transporter, mailGenerator } = setupTransporterAndMailGen();
+//     const salt = await bcrypt.genSalt(10);
+//     const hashedVerificationCode = await bcrypt.hash(verificationCode, salt);
 
-  var emailMessage = {
-    body: {
-      name,
-      intro: `We are pleased to inform you that your reservation application for <strong>Desk ${deskNumber}</strong> has been approved. Have a great day ahead!`,
-      outro:
-        "Do you need assistance or have any questions? Feel free to reach out to our Tech Lead at <i>kurtddbigtas@gmail.com</i>. We are here to help.",
-    },
-  };
+//     const updatedUser = await User.findOneAndUpdate(
+//       { email },
+//       { verificationCode: hashedVerificationCode }
+//     );
 
-  let mail = mailGenerator.generate(emailMessage);
+//     if (updatedUser) {
+//       return res.status(200).json({
+//         message: `Verification code has been resent to ${email}`,
+//       });
+//     } else {
+//       throw new Error("User not found");
+//     }
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(500).json({ error: "An error occurred." });
+//   }
+// };
 
-  let message = {
-    from: process.env.nmEMAIL,
-    to: email,
-    subject: "eMachine Hotdesk Booking System Reservation Approved",
-    html: mail,
-  };
+// const sendApplicationSuccess = async (email, name) => {
+//   let { transporter, mailGenerator } = setupTransporterAndMailGen();
 
-  try {
-    await sendEmail(message);
-  } catch (error) {
-    console.error("Error sending email: " + error);
-  }
-};
+//   var emailMessage = {
+//     body: {
+//       name,
+//       intro: `We are delighted to inform you that your application has been approved by our team of administrators, and your account is now fully activated.`,
+//       outro:
+//         "Do you need assistance or have any questions? Feel free to reach out to our Tech Lead at <i>kurtddbigtas@gmail.com</i>. We are here to help.",
+//     },
+//   };
+
+//   let mail = mailGenerator.generate(emailMessage);
+
+//   let message = {
+//     from: process.env.nmEMAIL,
+//     to: email,
+//     subject: "eMachine Hotdesk Booking System Application Success",
+//     html: mail,
+//   };
+
+//   try {
+//     await sendEmail(message);
+//   } catch (error) {
+//     console.error("Error sending email: " + error);
+//   }
+// };
+
+// const sendReservationApproved = async (email, name, deskNumber) => {
+//   let { transporter, mailGenerator } = setupTransporterAndMailGen();
+
+//   var emailMessage = {
+//     body: {
+//       name,
+//       intro: `We are pleased to inform you that your reservation application for <strong>Desk ${deskNumber}</strong> has been approved. Have a great day ahead!`,
+//       outro:
+//         "Do you need assistance or have any questions? Feel free to reach out to our Tech Lead at <i>kurtddbigtas@gmail.com</i>. We are here to help.",
+//     },
+//   };
+
+//   let mail = mailGenerator.generate(emailMessage);
+
+//   let message = {
+//     from: process.env.nmEMAIL,
+//     to: email,
+//     subject: "eMachine Hotdesk Booking System Reservation Approved",
+//     html: mail,
+//   };
+
+//   try {
+//     await sendEmail(message);
+//   } catch (error) {
+//     console.error("Error sending email: " + error);
+//   }
+// };
 
 module.exports = {
   sendCredentials,
-  resendVerificationCodeMail,
-  sendApplicationSuccess,
-  sendReservationApproved,
-  sendMagicLink
+  sendMagicLink,
+  sendPasswordResetSuccess
 };

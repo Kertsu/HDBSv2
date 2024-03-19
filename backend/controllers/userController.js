@@ -8,7 +8,7 @@ const User = require("../models/userModel");
 const Notification = require("../models/notificationModel");
 const cloudinary = require("../config/cloudinary");
 const queryHelper = require("../utils/queryHelper");
-const { sendCredentials, sendMagicLink } = require("../utils/mail.util");
+const { sendCredentials, sendMagicLink, sendPasswordResetSuccess } = require("../utils/mail.util");
 /**
  * Register a user
  */
@@ -653,11 +653,7 @@ const resetPassword = asyncHandler(async (req, res) => {
   user.passwordResetToken = undefined;
 
   try {
-    await user.save();
-    return res.status(200).json({
-      success: true,
-      error: "Password changed",
-    });
+    sendPasswordResetSuccess(user, res)
   } catch (error) {
     return res.status(400).json({
       success: false,
