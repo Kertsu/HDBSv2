@@ -646,7 +646,9 @@ const resetPassword = asyncHandler(async (req, res) => {
     });
   }
 
-  user.password = password;
+  const salt = await bcrypt.genSalt(10)
+  const hashedPassword = await bcrypt.hash(password, salt)
+  user.password = hashedPassword;
   user.passwordChangedAt = Date.now();
   user.passwordResetToken = undefined;
 
