@@ -428,7 +428,7 @@ const updateNotificationSettings = asyncHandler(async (req, res) => {
 const getUsers = asyncHandler(async (req, res) => {
   console.log(req.query);
   try {
-    const users = await queryHelper(User, req.query);
+    const users = await queryHelper(User, req.query, 'user');
 
     res.status(200).json({
       success: true,
@@ -436,7 +436,7 @@ const getUsers = asyncHandler(async (req, res) => {
       totalDocuments: await User.countDocuments(),
     });
   } catch (error) {
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({success:false, error: "Internal server error" });
   }
 });
 

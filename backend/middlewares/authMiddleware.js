@@ -81,7 +81,7 @@ const canHandleReservation = asyncHandler(async (req, res, next) => {
 
   if (!token) {
     res.status(401);
-    throw new Error("Not authorized. Token does not exist.");
+    return res.status(401).json({success: false, message: "Not authorized. Token does not exist."});
   }
 });
 

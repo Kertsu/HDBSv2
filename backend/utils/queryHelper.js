@@ -1,10 +1,10 @@
-const queryHelper = async (model, userQuery) => {
-    const { filters, first, rows, sortField, sortOrder } = userQuery;
+const queryHelper = async (model, userQuery, type) => {
+    const { filters, first, rows, sortField, sortOrder, area } = userQuery;
 
     let query = model.find();
 
 
-    if (filters) {
+    if (filters && type=='user' ) {
       for (const [key, value] of Object.entries(JSON.parse(filters))) {
           if (value.value && value.matchMode === 'contains') {
               query = query.or([
@@ -18,8 +18,22 @@ const queryHelper = async (model, userQuery) => {
               ]);
           }
       }
+  } else if (filters && type=='hotdesk'){
+    for (const [key, value] of Object.entries(JSON.parse(filters))) {
+        console.log(typeof value.value)
+        if (value.value && value.matchMode === 'contains') {
+            query = query.or([
+                { 'deskNumber': { $regex: new RegExp(value.value, 'i') } },
+            ]);
+        } else if (value.value && value.matchMode === 'equals') {
+            query = query.or([
+                { 'deskNumber': parseInt(value.value) },
+            ]);
+        }
+    }
+  } else if(filters && type=='reservation'){
+
   }
-  
   
 
     if (first !== undefined && rows !== undefined) {
