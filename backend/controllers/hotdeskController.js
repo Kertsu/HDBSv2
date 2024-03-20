@@ -1,6 +1,7 @@
 const Hotdesk = require("../models/hotdeskModel");
 const asyncHandler = require("express-async-handler");
 const queryHelper = require("../utils/queryHelper");
+const DeskNumber = require('../models/deskNumberModel')
 
 const getHotdesks = asyncHandler(async (req, res) => {
   try {
@@ -16,4 +17,39 @@ const getHotdesks = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { getHotdesks };
+const createHotdesk = asyncHandler(async (req, res) => {
+  const { deskNumber, essentials } = req.body;
+  if (!deskNumber) {
+    res.status(400).json({
+      success: false,
+      error: "Desk number is required."
+    });
+  }
+
+  const existingDesk = await Hotdesk.findOne({ deskNumber });
+
+  if (!(deskNumber >= 1 && deskNumber <= 80)) {
+    res.status(400).json({ message: "Invalid desk number" });
+  } else {
+    if (existingDesk) {
+      res.status(400).json({ message: "Desk already exist" });
+    } else {
+      await DeskNumber.create({
+        number: deskNumber,
+      });
+
+      const hotdesk = await Hotdesk.create({
+        title: `Hotdesk ${deskNumber}`,
+        deskNumber,
+        workspaceEssentials: essentials,
+      });
+
+      res.status(201).json({
+        success: true, 
+        hotdesk
+      });
+    }
+  }
+});
+
+module.exports = { getHotdesks, createHotdesk };
