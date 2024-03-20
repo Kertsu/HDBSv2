@@ -2,6 +2,7 @@ const Hotdesk = require("../models/hotdeskModel");
 const asyncHandler = require("express-async-handler");
 const queryHelper = require("../utils/queryHelper");
 const DeskNumber = require("../models/deskNumberModel");
+const Reservation = require('../models/reservationModel')
 
 const getHotdesks = asyncHandler(async (req, res) => {
   try {
@@ -68,4 +69,34 @@ const deleteHotdesk = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, desk: deletedDesk });
 });
 
-module.exports = { getHotdesks, createHotdesk, deleteHotdesk };
+const updateHotdesk = asyncHandler(async (req, res) => {
+  const hotdesk = await Hotdesk.findById(req.params.id);
+  const { essentials, status } = req.body;
+  const currentDate = new Date();
+
+  const reservedDesks = [];
+  currentDate.setUTCHours(0, 0, 0, 0);
+
+  const reservations = await Reservation.find({
+    date: currentDate.toISOString(),
+  });
+
+  for (const reservation of reservations) {
+    reservedDesks.push(reservation.deskNumber);
+  }
+
+  if (reservedDesks.includes(hotdesk.deskNumber)) {
+    res.status(400).json({
+      message:
+        "The hotdesk cannot be updated. Please choose an available hotdesk or try again later.",
+    });
+  } else {
+    hotdesk.workspaceEssentials =
+      essentials == null ? hotdesk.workspaceEssentials : essentials;
+    hotdesk.status = status ?? hotdesk.status;
+    await hotdesk.save();
+    res.status(200).json(hotdesk);
+  }
+});
+
+module.exports = { getHotdesks, createHotdesk, deleteHotdesk, updateHotdesk };
