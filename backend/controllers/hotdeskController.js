@@ -1,7 +1,7 @@
 const Hotdesk = require("../models/hotdeskModel");
 const asyncHandler = require("express-async-handler");
 const queryHelper = require("../utils/queryHelper");
-const DeskNumber = require('../models/deskNumberModel')
+const DeskNumber = require("../models/deskNumberModel");
 
 const getHotdesks = asyncHandler(async (req, res) => {
   try {
@@ -22,7 +22,7 @@ const createHotdesk = asyncHandler(async (req, res) => {
   if (!deskNumber) {
     res.status(400).json({
       success: false,
-      error: "Desk number is required."
+      error: "Desk number is required.",
     });
   }
 
@@ -45,11 +45,27 @@ const createHotdesk = asyncHandler(async (req, res) => {
       });
 
       res.status(201).json({
-        success: true, 
-        hotdesk
+        success: true,
+        hotdesk,
       });
     }
   }
 });
 
-module.exports = { getHotdesks, createHotdesk };
+const deleteHotdesk = asyncHandler(async (req, res) => {
+  const hotdesk = await Hotdesk.findById(req.params.id);
+
+  if (!hotdesk) {
+    res.status(400).json({
+      success: false,
+      error: "Hotdesk not found",
+    });
+  }
+
+  await DeskNumber.findOneAndDelete({ number: hotdesk.deskNumber });
+  const deletedDesk = await Hotdesk.findByIdAndDelete(req.params.id);
+
+  res.status(200).json({ success: true, desk: deletedDesk });
+});
+
+module.exports = { getHotdesks, createHotdesk, deleteHotdesk };
