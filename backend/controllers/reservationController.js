@@ -105,4 +105,19 @@ const abortReservation = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { getReservations, handleReservation, abortReservation };
+const getSelfReservations = asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+
+    const reservations = await queryHelper(Reservation, req.query, 'reservations');
+
+    const filteredReservations =  reservations.filter(reservation => {
+        return reservation.user.toString() === userId && reservation.mode === 0})
+
+    res.status(200).json({
+        success: true,
+        reservations: filteredReservations
+    });
+});
+
+
+module.exports = { getReservations, handleReservation, abortReservation, getSelfReservations };
