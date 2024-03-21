@@ -16,7 +16,7 @@ const handleReservation = asyncHandler(async (req, res) => {
 
   const reservation = await Reservation.findById(id);
   if (!reservation) {
-    res.status(400).json({
+    return res.status(400).json({
       success: false,
       error: "Reservation not found",
     });
@@ -30,12 +30,12 @@ const handleReservation = asyncHandler(async (req, res) => {
   }
 
   if (reservation.status != "PENDING") {
-    res.status(400).json({ success: false, error: "Invalid request" });
+    return res.status(400).json({ success: false, error: "Invalid request" });
   }
 
   if (action == "approve") {
-    reservation.status = "APPROVED"
-    await reservation.save()
+    reservation.status = "APPROVED";
+    await reservation.save();
     //   @TODO
     // Send email
     //   sendReservationApproved(
@@ -44,7 +44,7 @@ const handleReservation = asyncHandler(async (req, res) => {
     //     updatedReservation.deskNumber
     //   );
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       reservation,
     });
@@ -62,16 +62,47 @@ const handleReservation = asyncHandler(async (req, res) => {
     //     mode: rejectedReservation.mode
     //   });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       reservation,
     });
   } else {
-    res.status(400).json({
+    return res.status(400).json({
       success: false,
       error: "Invalid action",
     });
   }
 });
 
-module.exports = { getReservations, handleReservation };
+const abortReservation = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const reservation = await Reservation.findById(id);
+
+  if (!reservation) {
+    return res
+      .status(400)
+      .json({ success: false, error: "Reservation not found" });
+  }
+
+  if (reservation.status !== "PENDING" || reservation.mode === 1) {
+    // @TODO
+    // await ReservationHistory.create({
+    //   reservation: reservation.id,
+    //   deskNumber: reservation.deskNumber,
+    //   user: reservation.user,
+    //   date: reservation.date,
+    //   startTime: reservation.startTime,
+    //   endTime: reservation.endTime,
+    //   type: "ABORTED",
+    //   mode: reservation.mode,
+    // });
+    await reservation.deleteOne();
+    res
+      .status(200)
+      .json({ success: true, message: `Reservation aborted`, reservation });
+  } else {
+    res.status(400).json({ success: false, error: "Invalid request" });
+  }
+});
+
+module.exports = { getReservations, handleReservation, abortReservation };
