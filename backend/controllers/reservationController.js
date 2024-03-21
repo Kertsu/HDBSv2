@@ -119,5 +119,35 @@ const getSelfReservations = asyncHandler(async (req, res) => {
     });
 });
 
+const cancelReservation = asyncHandler(async (req, res) => {
+    const reservation = await Reservation.findOne({
+        user: req.user.id,
+        _id: req.params.id,
+      });
+    
+      if (!reservation) {
+        return res.status(400).json({ success:false, error: "Reservation not found" });
+      }
+    
+      if (reservation && reservation.status !== "STARTED") {
+        // await ReservationHistory.create({
+        //   mode: reservation.mode,
+        //   reservation: reservation.id,
+        //   deskNumber: reservation.deskNumber,
+        //   user: req.user.id,
+        //   date: reservation.date,
+        //   startTime: reservation.startTime,
+        //   endTime: reservation.endTime,
+        //   type: "CANCELED",
+        // });
+        await reservation.deleteOne();
+        return res.status(200).json({success: true, message: `Reservation canceled`, reservation });
+      } else {
+        return res
+          .status(400)
+          .json({ success:false, error: "Invalid request. Reservation cannot be canceled." });
+      }
+})
 
-module.exports = { getReservations, handleReservation, abortReservation, getSelfReservations };
+
+module.exports = { getReservations, handleReservation, abortReservation, getSelfReservations, cancelReservation };
