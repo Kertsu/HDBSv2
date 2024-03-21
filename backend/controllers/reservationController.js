@@ -3,6 +3,7 @@ const Reservation = require("../models/reservationModel");
 const User = require("../models/userModel");
 const Hotdesk = require("../models/hotdeskModel");
 const ReservationHistory = require('../models/reservationHistoryModel')
+const Switch = require('../models/switchModel')
 const queryHelper = require("../utils/queryHelper");
 
 const getReservations = asyncHandler(async (req, res) => {
@@ -220,9 +221,9 @@ const reserve = asyncHandler(async (req, res) => {
         .json({ success: false, error: "Hotdesk not found" });
     } else {
       try {
-        //   const switchConfig = await Switch.findOne()
+          const switchConfig = await Switch.findOne()
 
-        //   const status = switchConfig.autoAccepting ? "APPROVED" : "PENDING";
+          const status = switchConfig.autoAccepting ? "APPROVED" : "PENDING";
 
         const newReservation = await Reservation.create({
           user: req.user.id,
@@ -231,7 +232,7 @@ const reserve = asyncHandler(async (req, res) => {
           startTime,
           endTime,
           mode,
-          status: "PENDING",
+          status
         });
 
         //   if (switchConfig.autoAccepting){
