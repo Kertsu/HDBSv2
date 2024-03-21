@@ -2,6 +2,7 @@ const asyncHandler = require("express-async-handler");
 const Reservation = require("../models/reservationModel");
 const User = require("../models/userModel");
 const Hotdesk = require("../models/hotdeskModel");
+const ReservationHistory = require('../models/reservationHistoryModel')
 const queryHelper = require("../utils/queryHelper");
 
 const getReservations = asyncHandler(async (req, res) => {
@@ -51,17 +52,16 @@ const handleReservation = asyncHandler(async (req, res) => {
     });
   } else if (action == "reject") {
     await reservation.deleteOne();
-    //  @TODO
-    //   await ReservationHistory.create({
-    //     reservation: rejectedReservation.id,
-    //     user: rejectedReservation.user,
-    //     deskNumber: rejectedReservation.deskNumber,
-    //     date: rejectedReservation.date,
-    //     startTime: rejectedReservation.startTime,
-    //     endTime: rejectedReservation.endTime,
-    //     type: "REJECTED",
-    //     mode: rejectedReservation.mode
-    //   });
+      await ReservationHistory.create({
+        reservation: reservation.id,
+        user: reservation.user,
+        deskNumber: reservation.deskNumber,
+        date: reservation.date,
+        startTime: reservation.startTime,
+        endTime: reservation.endTime,
+        type: "REJECTED",
+        mode: reservation.mode
+      });
 
     return res.status(200).json({
       success: true,
@@ -86,17 +86,16 @@ const abortReservation = asyncHandler(async (req, res) => {
   }
 
   if (reservation.status !== "PENDING" || reservation.mode === 1) {
-    // @TODO
-    // await ReservationHistory.create({
-    //   reservation: reservation.id,
-    //   deskNumber: reservation.deskNumber,
-    //   user: reservation.user,
-    //   date: reservation.date,
-    //   startTime: reservation.startTime,
-    //   endTime: reservation.endTime,
-    //   type: "ABORTED",
-    //   mode: reservation.mode,
-    // });
+    await ReservationHistory.create({
+      reservation: reservation.id,
+      deskNumber: reservation.deskNumber,
+      user: reservation.user,
+      date: reservation.date,
+      startTime: reservation.startTime,
+      endTime: reservation.endTime,
+      type: "ABORTED",
+      mode: reservation.mode,
+    });
     await reservation.deleteOne();
     res
       .status(200)
@@ -138,16 +137,16 @@ const cancelReservation = asyncHandler(async (req, res) => {
   }
 
   if (reservation && reservation.status !== "STARTED") {
-    // await ReservationHistory.create({
-    //   mode: reservation.mode,
-    //   reservation: reservation.id,
-    //   deskNumber: reservation.deskNumber,
-    //   user: req.user.id,
-    //   date: reservation.date,
-    //   startTime: reservation.startTime,
-    //   endTime: reservation.endTime,
-    //   type: "CANCELED",
-    // });
+    await ReservationHistory.create({
+      mode: reservation.mode,
+      reservation: reservation.id,
+      deskNumber: reservation.deskNumber,
+      user: req.user.id,
+      date: reservation.date,
+      startTime: reservation.startTime,
+      endTime: reservation.endTime,
+      type: "CANCELED",
+    });
     await reservation.deleteOne();
     return res
       .status(200)
@@ -247,11 +246,18 @@ const reserve = asyncHandler(async (req, res) => {
   }
 });
 
+const getHistory = asyncHandler( async (req, res) => {
+    const reservations = await queryHelper(ReservationHistory, req.query, 'history')
+
+    const filteredReservations = reservations.filter(reservation => reservation.mode == 0)
+    return res.status(200).json({success: true, reservations: filteredReservations})
+})
+
 module.exports = {
   getReservations,
   handleReservation,
   abortReservation,
   getSelfReservations,
   cancelReservation,
-  reserve,
+  reserve, getHistory
 };
