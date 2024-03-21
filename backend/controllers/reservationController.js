@@ -34,11 +34,8 @@ const handleReservation = asyncHandler(async (req, res) => {
   }
 
   if (action == "approve") {
-    const updatedReservation = await Reservation.findByIdAndUpdate(
-      id,
-      { status: "APPROVED" },
-      { new: true }
-    );
+    reservation.status = "APPROVED"
+    await reservation.save()
     //   @TODO
     // Send email
     //   sendReservationApproved(
@@ -49,11 +46,10 @@ const handleReservation = asyncHandler(async (req, res) => {
 
     res.status(200).json({
       success: true,
-      updatedReservation,
+      reservation,
     });
   } else if (action == "reject") {
-    const rejectedReservation = await Reservation.findByIdAndDelete(id);
-
+    await reservation.deleteOne();
     //  @TODO
     //   await ReservationHistory.create({
     //     reservation: rejectedReservation.id,
@@ -68,7 +64,7 @@ const handleReservation = asyncHandler(async (req, res) => {
 
     res.status(200).json({
       success: true,
-      rejectedReservation,
+      reservation,
     });
   } else {
     res.status(400).json({
