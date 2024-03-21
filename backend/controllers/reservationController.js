@@ -10,6 +10,7 @@ const getReservations = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     reservations,
+    totalDocuments: await Reservation.countDocuments({ mode: 0  })
   });
 });
 
@@ -121,6 +122,7 @@ const getSelfReservations = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     reservations: filteredReservations,
+    totalDocuments: await Reservation.countDocuments({ user: req.user.id,  mode: 0  })
   });
 });
 
@@ -250,7 +252,7 @@ const getHistory = asyncHandler( async (req, res) => {
     const reservations = await queryHelper(ReservationHistory, req.query, 'history')
 
     const filteredReservations = reservations.filter(reservation => reservation.mode == 0)
-    return res.status(200).json({success: true, reservations: filteredReservations})
+    return res.status(200).json({success: true, reservations: filteredReservations, totalDocuments: await ReservationHistory.countDocuments({ mode: 0  })})
 })
 
 const getSelfHistory = asyncHandler(async (req, res) => {
@@ -259,7 +261,7 @@ const getSelfHistory = asyncHandler(async (req, res) => {
     const filteredReservations = reservations.filter(reservation => reservation.user.toString() === req.user.id && reservation.mode === 0)
 
     return res.status(200).json({
-        success: true, reservations: filteredReservations
+        success: true, reservations: filteredReservations, totalDocuments: await ReservationHistory.countDocuments({ user: req.user.id,  mode: 0  })
     })
 })
 
