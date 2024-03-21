@@ -1,4 +1,4 @@
-const { getReservations, handleReservation, abortReservation, getSelfReservations, cancelReservation, reserve, getHistory } = require("../controllers/reservationController");
+const { getReservations, handleReservation, abortReservation, getSelfReservations, cancelReservation, reserve, getHistory, getSelfHistory } = require("../controllers/reservationController");
 const { protect, isAdmin, canHandleReservation, } = require("../middlewares/authMiddleware");
 const router = require("express").Router();
 
@@ -14,11 +14,12 @@ router.delete('/cancel/:id', protect, cancelReservation)
 
 router.post('/reserve', protect, reserve)
 
-router.get('/history', protect, getHistory)
+router.get('/history', isAdmin, getHistory)
+
+router.get('/self/history', protect, getSelfHistory )
 /**
  * @todo
- * 
- * /self/history
+ * auto accepting
  */
 
 module.exports = router

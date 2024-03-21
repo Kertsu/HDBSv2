@@ -253,11 +253,21 @@ const getHistory = asyncHandler( async (req, res) => {
     return res.status(200).json({success: true, reservations: filteredReservations})
 })
 
+const getSelfHistory = asyncHandler(async (req, res) => {
+    const reservations = await queryHelper(ReservationHistory, req.query, 'selfHistory');
+
+    const filteredReservations = reservations.filter(reservation => reservation.user.toString() === req.user.id && reservation.mode === 0)
+
+    return res.status(200).json({
+        success: true, reservations: filteredReservations
+    })
+})
+
 module.exports = {
   getReservations,
   handleReservation,
   abortReservation,
   getSelfReservations,
   cancelReservation,
-  reserve, getHistory
+  reserve, getHistory, getSelfHistory
 };
