@@ -1,5 +1,5 @@
 const queryHelper = async (model, userQuery, type) => {
-    const { filters, first, rows, sortField, sortOrder, area } = userQuery;
+    const { filters, first, rows, sortField, sortOrder, area, mode } = userQuery;
 
     let query = model.find();
 
@@ -31,8 +31,8 @@ const queryHelper = async (model, userQuery, type) => {
             ]);
         }
     }
-  } else if(filters && type=='reservation'){
-
+  } else if(mode && type=='reservation'){
+    query = query.find({mode})
   }
   
 
