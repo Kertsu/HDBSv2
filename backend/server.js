@@ -58,6 +58,7 @@ app.use(attachSocketMiddleware(io));
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/hotdesks", require("./routes/hotdeskRoutes"));
 app.use("/api/reservations", require("./routes/reservationRoutes"));
+app.use('/api/trails', require('./routes/auditTrailRoutes'))
 
 const addNewUser = (
   { id, username, email, role, avatar, banner, description },
