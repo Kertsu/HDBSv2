@@ -35,6 +35,9 @@ const hotdeskSchema = mongoose.Schema({
     type: String, 
     enum:["AVAILABLE","UNAVAILABLE"],
     default: "AVAILABLE"
+  },
+  area: {
+    type: Number
   }
 }, { timestamps: true });
 

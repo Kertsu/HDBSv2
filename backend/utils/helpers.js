@@ -62,6 +62,29 @@ const generatePassword = () => {
   return retVal;
 }
 
+async function updateAreaProperty() {
+  const Hotdesk = require('../models/hotdeskModel')
+  try {
+    const ranges = [
+      { start: 1, end: 26, area: 1 },
+      { start: 27, end: 53, area: 2 },
+      { start: 54, end: 80, area: 3 }
+    ];
+
+    for (const range of ranges) {
+      await Hotdesk.updateMany(
+        { deskNumber: { $gte: range.start, $lte: range.end } },
+        { $set: { area: range.area } },
+        { multi: true } // Update multiple documents
+      );
+    }
+
+    console.log('Area property updated successfully.');
+  } catch (error) {
+    console.error('Error updating area property:', error);
+  }
+}
+
 
 module.exports = {
   isValidEmail,
@@ -69,5 +92,6 @@ module.exports = {
   isValidPassword,
   generateToken,
   bulkDelete,
-  generatePassword
+  generatePassword,
+  updateAreaProperty
 };
