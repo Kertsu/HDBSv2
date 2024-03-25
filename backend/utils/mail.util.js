@@ -97,7 +97,7 @@ const sendMagicLink = async (user, res) => {
   let { mailGenerator } = setupTransporterAndMailGen();
   const token = crypto.randomBytes(32).toString('hex');
 
-  const link = `http://localhost:4200/change-password?token=${token}&id=${user.id}`
+  const link = `http://localhost:4200/reset-password?token=${token}&id=${user.id}`
 
   var emailMessage = {
     body: {

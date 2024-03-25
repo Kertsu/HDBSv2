@@ -426,7 +426,7 @@ const updateNotificationSettings = asyncHandler(async (req, res) => {
  * Fetch all users (admin only)
  */
 const getUsers = asyncHandler(async (req, res) => {
-  console.log(req.query);
+  // console.log(req.query);
   try {
     const users = await queryHelper(User, req.query, 'user');
 
@@ -565,21 +565,22 @@ const handleUser = asyncHandler(async (req, res) => {
  */
 const forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
+  console.log(email)
 
   const user = await User.findOne({ email });
 
   if (!user) {
-    res.status(400).json({ success: false, error: "User not found" });
+    return res.status(400).json({ success: false, error: "User not found" });
   }
 
   if (!email) {
-    res.status(400).json({ success: false, error: "Missing required fields" });
+    return res.status(400).json({ success: false, error: "Missing required fields" });
   }
 
   try {
     sendMagicLink(user, res);
   } catch (error) {
-    res.status(400).json({
+    return res.status(400).json({
       success: false,
       error: "Invalid user data",
     });
