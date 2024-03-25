@@ -3,77 +3,89 @@ const queryHelper = async (model, userQuery, type) => {
 
   let query = model.find();
 
-  console.log(filters);
-
   if (filters && type === "user") {
     const parsedFilters = JSON.parse(filters);
     const andConditions = [];
 
     for (const [key, value] of Object.entries(parsedFilters)) {
-        switch (value.matchMode) {
-            case "contains":
-                if (value.value) {
-                    andConditions.push({
-                        [key]: { $regex: new RegExp(value.value, "i") },
-                    });
-                }
-                break;
-            case "startsWith":
-                if (value.value) {
-                    andConditions.push({
-                        [key]: { $regex: new RegExp("^" + value.value, "i") },
-                    });
-                }
-                break;
-            case "endsWith":
-                if (value.value) {
-                    andConditions.push({
-                        [key]: { $regex: new RegExp(value.value + "$", "i") },
-                    });
-                }
-                break;
-            case "equals":
-                if (value.value) {
-                    andConditions.push({ [key]: value.value });
-                }
-                break;
-            case "notContains":
-                if (value.value) {
-                    andConditions.push({
-                        [key]: { $not: { $regex: new RegExp(value.value, "i") } },
-                    });
-                }
-                break;
-            case "contains":
-                if (value.value) {
-                    andConditions.push({
-                        [key]: { $regex: new RegExp(`.*${value.value}.*`, "i") },
-                    });
-                }
-                break;
-        }
+      switch (value.matchMode) {
+        case "contains":
+          if (value.value) {
+            andConditions.push({
+              [key]: { $regex: new RegExp(value.value, "i") },
+            });
+          }
+          break;
+        case "startsWith":
+          if (value.value) {
+            andConditions.push({
+              [key]: { $regex: new RegExp("^" + value.value, "i") },
+            });
+          }
+          break;
+        case "endsWith":
+          if (value.value) {
+            andConditions.push({
+              [key]: { $regex: new RegExp(value.value + "$", "i") },
+            });
+          }
+          break;
+        case "equals":
+          if (value.value) {
+            andConditions.push({ [key]: value.value });
+          }
+          break;
+        case "notContains":
+          if (value.value) {
+            andConditions.push({
+              [key]: { $not: { $regex: new RegExp(value.value, "i") } },
+            });
+          }
+          break;
+        case "contains":
+          if (value.value) {
+            andConditions.push({
+              [key]: { $regex: new RegExp(`.*${value.value}.*`, "i") },
+            });
+          }
+          break;
+        case "dateBefore":
+          if (value.value) {
+            andConditions.push({
+              [key]: { $lt: new Date(value.value) },
+            });
+          }
+          break;
+        case "dateAfter":
+          if (value.value) {
+            andConditions.push({
+              [key]: { $gt: new Date(value.value) },
+            });
+          }
+          break;
+        case "dateIsNot":
+          if (value.value) {
+            andConditions.push({
+              [key]: { $ne: new Date(value.value) },
+            });
+          }
+          break;
+        case "dateIs":
+          if (value.value) {
+            andConditions.push({
+              [key]: new Date(value.value)
+            });
+          }
+          break;
+      }
 
-        if (key === 'isDisabled' && value.value === 0) {
-            andConditions.push({ isDisabled: 0 });
-        }
+      if (key === "isDisabled" && value.value === 0) {
+        andConditions.push({ isDisabled: 0 });
+      }
     }
-
-    console.log(andConditions, "ln60");
 
     if (andConditions.length > 0) {
-        query = query.and(andConditions);
-    }
-}
- else if (filters && type == "hotdesk") {
-    for (const [key, value] of Object.entries(JSON.parse(filters))) {
-      console.log(typeof value.value);
-      if (value.value && value.matchMode === "contains") {
-        query = query.or([
-          { deskNumber: { $regex: new RegExp(value.value, "i") } },
-        ]);
-      } else if (value.value && value.matchMode === "equals") {
-        query = query.or([{ deskNumber: parseInt(value.value) }]);
-      }
+      query = query.and(andConditions);
     }
   } else if (mode && type == "reservation") {
     query = query.find({ mode });
