@@ -39,8 +39,9 @@ const userSchema = mongoose.Schema(
       type: String,
     },
     isDisabled: {
-      type: Boolean,
-      default: false,
+      type: Number,
+      default: 0,
+      enum: [0,1]
     },
     role: {
       type: String,

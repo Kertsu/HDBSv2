@@ -10,57 +10,61 @@ const queryHelper = async (model, userQuery, type) => {
     const andConditions = [];
 
     for (const [key, value] of Object.entries(parsedFilters)) {
-      switch (value.matchMode) {
-        case "contains":
-          if (value.value) {
-            andConditions.push({
-              [key]: { $regex: new RegExp(value.value, "i") },
-            });
-          }
-          break;
-        case "startsWith":
-          if (value.value) {
-            andConditions.push({
-              [key]: { $regex: new RegExp("^" + value.value, "i") },
-            });
-          }
-          break;
-        case "endsWith":
-          if (value.value) {
-            andConditions.push({
-              [key]: { $regex: new RegExp(value.value + "$", "i") },
-            });
-          }
-          break;
-        case "equals":
-          if (value.value) {
-            andConditions.push({ [key]: value.value });
-          }
-          break;
-        case "notContains":
-          if (value.value) {
-            andConditions.push({
-              [key]: { $not: { $regex: new RegExp(value.value, "i") } },
-            });
-          }
-          break;
-        case "contains":
-          if (value.value) {
-            andConditions.push({
-              [key]: { $regex: new RegExp(`.*${value.value}.*`, "i") },
-            });
-          }
-          break;
-        // Add cases for other match modes if needed
-      }
+        switch (value.matchMode) {
+            case "contains":
+                if (value.value) {
+                    andConditions.push({
+                        [key]: { $regex: new RegExp(value.value, "i") },
+                    });
+                }
+                break;
+            case "startsWith":
+                if (value.value) {
+                    andConditions.push({
+                        [key]: { $regex: new RegExp("^" + value.value, "i") },
+                    });
+                }
+                break;
+            case "endsWith":
+                if (value.value) {
+                    andConditions.push({
+                        [key]: { $regex: new RegExp(value.value + "$", "i") },
+                    });
+                }
+                break;
+            case "equals":
+                if (value.value) {
+                    andConditions.push({ [key]: value.value });
+                }
+                break;
+            case "notContains":
+                if (value.value) {
+                    andConditions.push({
+                        [key]: { $not: { $regex: new RegExp(value.value, "i") } },
+                    });
+                }
+                break;
+            case "contains":
+                if (value.value) {
+                    andConditions.push({
+                        [key]: { $regex: new RegExp(`.*${value.value}.*`, "i") },
+                    });
+                }
+                break;
+        }
+
+        if (key === 'isDisabled' && value.value === 0) {
+            andConditions.push({ isDisabled: 0 });
+        }
     }
 
     console.log(andConditions, "ln60");
 
     if (andConditions.length > 0) {
-      query = query.and(andConditions);
+        query = query.and(andConditions);
     }
-  } else if (filters && type == "hotdesk") {
+}
+ else if (filters && type == "hotdesk") {
     for (const [key, value] of Object.entries(JSON.parse(filters))) {
       console.log(typeof value.value);
       if (value.value && value.matchMode === "contains") {
