@@ -15,3 +15,7 @@ const hashPassword = async (password) => {
 const isValidPassword = (password) => {
   return /^(?=.*\d)(?=.*[a-zA-Z])(?=.*[!@#$%^&*])/.test(password);
 };
+
+const generateToken = (id) => {
+    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+  };
