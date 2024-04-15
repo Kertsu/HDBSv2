@@ -89,3 +89,13 @@ async function updateAreaProperty() {
     console.error("Error updating area property:", error);
   }
 }
+
+module.exports = {
+    isValidEmail,
+    hashPassword,
+    isValidPassword,
+    generateToken,
+    bulkDelete,
+    generatePassword,
+    updateAreaProperty
+  };
