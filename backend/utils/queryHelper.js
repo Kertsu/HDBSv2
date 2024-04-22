@@ -91,6 +91,10 @@ const queryHelper = async (model, userQuery, type) => {
     query = query.find({ mode });
   }
 
+  if (area){
+    query = query.find({ area });
+  }
+
   if (first !== undefined && rows !== undefined) {
     query = query.skip(parseInt(first)).limit(parseInt(rows));
   }
