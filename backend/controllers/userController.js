@@ -414,6 +414,7 @@ const updatePassword = asyncHandler(async (req, res) => {
   const hashedPassword = await hashPassword(newPassword);
 
   user.password = hashedPassword;
+  user.passwordChangedAt = Date.now();
 
   try {
     await user.save();
