@@ -317,7 +317,8 @@ const updateSelf = asyncHandler(async (req, res) => {
  * Update user role
  */
 const updateUser = asyncHandler(async (req, res) => {
-  const { username, role, email } = req.body;
+  // const { username, role, email } = req.body;
+  const { username, role } = req.body;
 
   const userToUpdate = await User.findById(req.params.id);
 
@@ -333,7 +334,6 @@ const updateUser = asyncHandler(async (req, res) => {
     role !== "superadmin"
   ) {
     userToUpdate.username = username || userToUpdate.username;
-    userToUpdate.email = email || userToUpdate.email;
     userToUpdate.role = role || userToUpdate.role;
 
     await userToUpdate.save();
@@ -348,7 +348,6 @@ const updateUser = asyncHandler(async (req, res) => {
   ) {
     // Admins can update regular users
     userToUpdate.username = username || userToUpdate.username;
-    userToUpdate.email = email || userToUpdate.email;
     userToUpdate.role = role || userToUpdate.role;
 
     await userToUpdate.save();
@@ -525,52 +524,110 @@ const handleUser = asyncHandler(async (req, res) => {
   }
 
   if (userToUpdate.id === requestingUser.id) {
-    return res.status(400).json({ success: false, error: "Invalid action" });
+    return res
+      .status(400)
+      .json({
+        success: false,
+        error: "Invalid action: Cannot perform action on self",
+      });
   }
 
   const isAdmin = requestingUser.role === "admin";
   const isSuperAdmin = requestingUser.role === "superadmin";
-  const isRegularUser =
-    userToUpdate.role === "user" || userToUpdate.role === "om";
+  const isOM = requestingUser.role === "om";
+  const isRegularUser = requestingUser.role === "user";
 
-  if (
-    (isSuperAdmin && !isRegularUser) ||
-    (isAdmin && !isRegularUser && !isSuperAdmin)
-  ) {
-    let updatedUser;
-    let message;
-
+  if (isSuperAdmin) {
+    if (userToUpdate.role === "superadmin") {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          error:
+            "Permission denied: Cannot perform action on other superadmins",
+        });
+    }
     if (action === "disable") {
       if (!userToUpdate.isDisabled) {
-        updatedUser = await User.findByIdAndUpdate(
+        const updatedUser = await User.findByIdAndUpdate(
           id,
           { isDisabled: true },
           { new: true }
         ).select("-password");
-        message = `${updatedUser.username} is now disabled`;
+        return res
+          .status(200)
+          .json({
+            success: true,
+            message: `${updatedUser.username} is now disabled`,
+          });
       } else {
         return res
           .status(400)
-          .json({ success: false, error: "Invalid action" });
+          .json({
+            success: false,
+            error: "Invalid action: User is already disabled",
+          });
       }
     } else if (action === "enable") {
       if (userToUpdate.isDisabled) {
-        updatedUser = await User.findByIdAndUpdate(
+        const updatedUser = await User.findByIdAndUpdate(
           id,
           { isDisabled: false },
           { new: true }
         ).select("-password");
-        message = `${updatedUser.username} is now enabled`;
+        return res
+          .status(200)
+          .json({
+            success: true,
+            message: `${updatedUser.username} is now enabled`,
+          });
       } else {
         return res
           .status(400)
-          .json({ success: false, error: "Invalid action" });
+          .json({
+            success: false,
+            error: "Invalid action: User is already enabled",
+          });
       }
     } else {
       return res.status(400).json({ success: false, error: "Invalid action" });
     }
-
-    return res.status(200).json({ success: true, message });
+  } else if (isAdmin) {
+    if (userToUpdate.role === "superadmin" || userToUpdate.role === "admin") {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          error: "Permission denied: Cannot perform action on other admins",
+        });
+    }
+    if ((isOM || isRegularUser) && action === "disable") {
+      const updatedUser = await User.findByIdAndUpdate(
+        id,
+        { isDisabled: true },
+        { new: true }
+      ).select("-password");
+      return res
+        .status(200)
+        .json({
+          success: true,
+          message: `${updatedUser.username} is now disabled`,
+        });
+    } else if ((isOM || isRegularUser) && action === "enable") {
+      const updatedUser = await User.findByIdAndUpdate(
+        id,
+        { isDisabled: false },
+        { new: true }
+      ).select("-password");
+      return res
+        .status(200)
+        .json({
+          success: true,
+          message: `${updatedUser.username} is now enabled`,
+        });
+    } else {
+      return res.status(400).json({ success: false, error: "Invalid action" });
+    }
   } else {
     return res.status(403).json({ success: false, error: "Permission denied" });
   }
@@ -698,25 +755,21 @@ const validateResetToken = async (req, res) => {
     const tokenExpired = passwordResetToken.expiresAt < Date.now();
 
     if (!passwordResetToken || !user || !tokenValid || tokenExpired) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          error:
-            "It appears that the password reset link you clicked on is invalid. Please try again.",
-        });
+      return res.status(400).json({
+        success: false,
+        error:
+          "It appears that the password reset link you clicked on is invalid. Please try again.",
+      });
     }
 
     res.status(200).json({ success: true, message: "Reset token is valid" });
   } catch (error) {
     console.error(error);
-    return res
-      .status(500)
-      .json({
-        success: false,
-        error:
-          "It appears that the password reset link you clicked on is invalid. Please try again.",
-      });
+    return res.status(500).json({
+      success: false,
+      error:
+        "It appears that the password reset link you clicked on is invalid. Please try again.",
+    });
   }
 };
 
