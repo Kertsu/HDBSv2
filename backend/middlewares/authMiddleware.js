@@ -18,12 +18,12 @@ const protect = asyncHandler(async (req, res, next) => {
       req.user = await User.findById(decoded.id).select("-password");
       next();
     } catch (error) {
-      res.status(401).json({ error: "Not authorized" });
+      res.status(401).json({ success: false, error: "Session expired. Please log in again." });
     }
   }
 
   if (!token) {
-    res.status(401).json({ error: "Not authorized. Token does not exist." });
+    res.status(401).json({ success: false, error: "Not authorized. Token does not exist." });
   }
 });
 
@@ -42,16 +42,16 @@ const isAdmin = asyncHandler(async (req, res, next) => {
       req.user = await User.findById(decoded.id).select("-password");
 
       if (req.user.role !== "admin" && req.user.role !== "superadmin") {
-        res.status(403).json({ error: "Forbidden" });
+        res.status(403).json({ success: false, error: "Forbidden" });
       }
       next();
     } catch (error) {
-      res.status(401).json({ error: "Not authorized" });
+      res.status(401).json({ success: false, error: "Not authorized" });
     }
   }
 
   if (!token) {
-    res.status(401).json({ error: "Not authorized. Token does not exist." });
+    res.status(401).json({ success: false, error: "Not authorized. Token does not exist." });
   }
 });
 

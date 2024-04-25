@@ -65,6 +65,8 @@ const sendCredentials = async (email, name, res) => {
     subject: "[DeskSync] HDBS Credentials",
     html: mail,
   };
+  
+  await sendEmail(message);
 
   try {
     const salt = await bcrypt.genSalt(10);
@@ -77,15 +79,9 @@ const sendCredentials = async (email, name, res) => {
     });
 
     if (user) {
-      await sendEmail(message);
       return res.status(201).json({
         success: true,
-        user: {
-          id: user.id,
-          role: user.role,
-          username: user.username,
-          email: user.email,
-        },
+        user,
       });
     } else {
       res.status(400);
