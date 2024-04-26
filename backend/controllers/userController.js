@@ -266,6 +266,10 @@ const updateSelf = asyncHandler(async (req, res) => {
   const { username, description } = req.body;
   const user = await User.findById(req.user.id).select("-password");
 
+  const defaultBanner =
+    "https://res.cloudinary.com/drlztlr1m/image/upload/v1708332794/memuvo7apu0eqdt4f6mr.svg";
+  const defaultAvatar =
+    "http://res.cloudinary.com/drlztlr1m/image/upload/v1706979188/oxbsppubd3rsabqwfxsr.jpg";
 
   if (!user) {
     return res.status(404).json({
@@ -281,8 +285,11 @@ const updateSelf = asyncHandler(async (req, res) => {
     });
   }
 
-  if (req.files && req.files['avatar']) {
-    const avatar = req.files['avatar'][0]; 
+
+  console.log(req.files)
+
+  if (req.files && req.files["avatar"]) {
+    const avatar = req.files["avatar"][0];
     cloudinary.uploader.upload(avatar.path, async (err, result) => {
       if (err) {
         return res.status(500).json({
@@ -293,10 +300,12 @@ const updateSelf = asyncHandler(async (req, res) => {
       user.avatar = result.url;
       await user.save();
     });
+  } else if (req.body.defaultAvatar && req.body.defaultAvatar === defaultAvatar) {
+    user.avatar = defaultAvatar;
   }
 
-  if (req.files && req.files['banner']) {
-    const banner = req.files['banner'][0]; 
+  if (req.files && req.files["banner"]) {
+    const banner = req.files["banner"][0];
     cloudinary.uploader.upload(banner.path, async (err, result) => {
       if (err) {
         return res.status(500).json({
@@ -307,6 +316,8 @@ const updateSelf = asyncHandler(async (req, res) => {
       user.banner = result.url;
       await user.save();
     });
+  } else if (req.body.defaultBanner && req.body.defaultBanner === defaultBanner) {
+    user.banner = defaultBanner;
   }
 
   if (username) {
@@ -319,7 +330,9 @@ const updateSelf = asyncHandler(async (req, res) => {
 
   try {
     await user.save();
-    res.status(200).json({ success: true, user });
+    return res
+      .status(200)
+      .json({ success: true, user, message: "Profile updated successfully!" });
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -327,6 +340,67 @@ const updateSelf = asyncHandler(async (req, res) => {
     });
   }
 });
+
+// const updateSelf = asyncHandler(async (req, res) => {
+//   const { username, description } = req.body;
+//   const user = await User.findById(req.user.id).select("-password");
+
+//   const defaultBanner =
+//     "https://res.cloudinary.com/drlztlr1m/image/upload/v1708332794/memuvo7apu0eqdt4f6mr.svg";
+//   const defaultAvatar =
+//     "http://res.cloudinary.com/drlztlr1m/image/upload/v1706979188/oxbsppubd3rsabqwfxsr.jpg";
+
+//   if (!user) {
+//     return res.status(404).json({
+//       success: false,
+//       error: "User not found",
+//     });
+//   }
+
+//   if (username && !/^[a-zA-Z_]+$/.test(username)) {
+//     return res.status(400).json({
+//       success: false,
+//       error: "Invalid username",
+//     });
+//   }
+
+//   try {
+//     if (req.files && req.files["avatar"]) {
+//       const avatar = req.files["avatar"][0];
+//       const avatarUploadResult = await cloudinary.uploader.upload(avatar.path);
+//       user.avatar = avatarUploadResult.url;
+//     } else if (req.body.defaultAvatar && req.body.defaultAvatar === defaultAvatar) {
+//       user.avatar = defaultAvatar;
+//     }
+
+//     if (req.files && req.files["banner"]) {
+//       const banner = req.files["banner"][0];
+//       const bannerUploadResult = await cloudinary.uploader.upload(banner.path);
+//       user.banner = bannerUploadResult.url;
+//     } else if (req.body.defaultBanner && req.body.defaultBanner === defaultBanner) {
+//       user.banner = defaultBanner;
+//     }
+
+//     if (username) {
+//       user.username = username;
+//     }
+
+//     if (description) {
+//       user.description = description;
+//     }
+
+//     await user.save();
+
+//     return res
+//       .status(200)
+//       .json({ success: true, user, message: "Profile updated successfully!" });
+//   } catch (error) {
+//     return res.status(500).json({
+//       success: false,
+//       error: "Error saving user",
+//     });
+//   }
+// });
 
 
 /**
@@ -541,12 +615,10 @@ const handleUser = asyncHandler(async (req, res) => {
   }
 
   if (userToUpdate.id === requestingUser.id) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        error: "Invalid action: Cannot perform action on self",
-      });
+    return res.status(400).json({
+      success: false,
+      error: "Invalid action: Cannot perform action on self",
+    });
   }
 
   const isAdmin = requestingUser.role === "admin";
@@ -556,13 +628,10 @@ const handleUser = asyncHandler(async (req, res) => {
 
   if (isSuperAdmin) {
     if (userToUpdate.role === "superadmin") {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          error:
-            "Permission denied: Cannot perform action on other superadmins",
-        });
+      return res.status(403).json({
+        success: false,
+        error: "Permission denied: Cannot perform action on other superadmins",
+      });
     }
     if (action === "disable") {
       if (!userToUpdate.isDisabled) {
@@ -571,19 +640,15 @@ const handleUser = asyncHandler(async (req, res) => {
           { isDisabled: true },
           { new: true }
         ).select("-password");
-        return res
-          .status(200)
-          .json({
-            success: true,
-            message: `${updatedUser.username} is now disabled`,
-          });
+        return res.status(200).json({
+          success: true,
+          message: `${updatedUser.username} is now disabled`,
+        });
       } else {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            error: "Invalid action: User is already disabled",
-          });
+        return res.status(400).json({
+          success: false,
+          error: "Invalid action: User is already disabled",
+        });
       }
     } else if (action === "enable") {
       if (userToUpdate.isDisabled) {
@@ -592,31 +657,25 @@ const handleUser = asyncHandler(async (req, res) => {
           { isDisabled: false },
           { new: true }
         ).select("-password");
-        return res
-          .status(200)
-          .json({
-            success: true,
-            message: `${updatedUser.username} is now enabled`,
-          });
+        return res.status(200).json({
+          success: true,
+          message: `${updatedUser.username} is now enabled`,
+        });
       } else {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            error: "Invalid action: User is already enabled",
-          });
+        return res.status(400).json({
+          success: false,
+          error: "Invalid action: User is already enabled",
+        });
       }
     } else {
       return res.status(400).json({ success: false, error: "Invalid action" });
     }
   } else if (isAdmin) {
     if (userToUpdate.role === "superadmin" || userToUpdate.role === "admin") {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          error: "Permission denied: Cannot perform action on other admins",
-        });
+      return res.status(403).json({
+        success: false,
+        error: "Permission denied: Cannot perform action on other admins",
+      });
     }
     if ((isOM || isRegularUser) && action === "disable") {
       const updatedUser = await User.findByIdAndUpdate(
@@ -624,24 +683,20 @@ const handleUser = asyncHandler(async (req, res) => {
         { isDisabled: true },
         { new: true }
       ).select("-password");
-      return res
-        .status(200)
-        .json({
-          success: true,
-          message: `${updatedUser.username} is now disabled`,
-        });
+      return res.status(200).json({
+        success: true,
+        message: `${updatedUser.username} is now disabled`,
+      });
     } else if ((isOM || isRegularUser) && action === "enable") {
       const updatedUser = await User.findByIdAndUpdate(
         id,
         { isDisabled: false },
         { new: true }
       ).select("-password");
-      return res
-        .status(200)
-        .json({
-          success: true,
-          message: `${updatedUser.username} is now enabled`,
-        });
+      return res.status(200).json({
+        success: true,
+        message: `${updatedUser.username} is now enabled`,
+      });
     } else {
       return res.status(400).json({ success: false, error: "Invalid action" });
     }
