@@ -49,7 +49,15 @@ router.patch("/self/avatar", protect, upload.single("avatar"), uploadAvatar);
 router.patch("/self/banner", protect, upload.single("banner"), uploadBanner);
 
 // Update self
-router.put("/self/update", protect, upload.single("avatar"), updateSelf);
+router.put(
+  "/self/update",
+  protect,
+  upload.fields([
+    { name: "avatar", maxCount: 1 },
+    { name: "banner", maxCount: 1 },
+  ]),
+  updateSelf
+);
 
 // Update receiving email preference
 router.patch(

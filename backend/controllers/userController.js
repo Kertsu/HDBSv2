@@ -266,8 +266,9 @@ const updateSelf = asyncHandler(async (req, res) => {
   const { username, description } = req.body;
   const user = await User.findById(req.user.id).select("-password");
 
+
   if (!user) {
-    res.status(404).json({
+    return res.status(404).json({
       success: false,
       error: "User not found",
     });
@@ -280,16 +281,30 @@ const updateSelf = asyncHandler(async (req, res) => {
     });
   }
 
-  if (req.file) {
-    cloudinary.uploader.upload(req.file.path, async (err, result) => {
+  if (req.files && req.files['avatar']) {
+    const avatar = req.files['avatar'][0]; 
+    cloudinary.uploader.upload(avatar.path, async (err, result) => {
       if (err) {
         return res.status(500).json({
           success: false,
           error: "Cannot upload avatar",
         });
       }
-
       user.avatar = result.url;
+      await user.save();
+    });
+  }
+
+  if (req.files && req.files['banner']) {
+    const banner = req.files['banner'][0]; 
+    cloudinary.uploader.upload(banner.path, async (err, result) => {
+      if (err) {
+        return res.status(500).json({
+          success: false,
+          error: "Cannot upload banner",
+        });
+      }
+      user.banner = result.url;
       await user.save();
     });
   }
@@ -312,6 +327,7 @@ const updateSelf = asyncHandler(async (req, res) => {
     });
   }
 });
+
 
 /**
  * Update user role
