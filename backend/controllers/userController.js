@@ -111,29 +111,11 @@ const authenticate = asyncHandler(async (req, res) => {
  * Get self
  */
 const getSelf = asyncHandler(async (req, res) => {
-  const {
-    id,
-    username,
-    email,
-    role,
-    avatar,
-    banner,
-    description,
-    passwordChangedAt,
-  } = await User.findById(req.user.id);
+  const user = await User.findById(req.user.id).select("-password");
 
   res.status(200).json({
     success: true,
-    user: {
-      id,
-      username,
-      email,
-      role,
-      avatar,
-      banner,
-      description,
-      passwordChangedAt,
-    },
+    user,
   });
 });
 
@@ -285,8 +267,7 @@ const updateSelf = asyncHandler(async (req, res) => {
     });
   }
 
-
-  console.log(req.files)
+  console.log(req.files);
 
   if (req.files && req.files["avatar"]) {
     const avatar = req.files["avatar"][0];
@@ -300,7 +281,10 @@ const updateSelf = asyncHandler(async (req, res) => {
       user.avatar = result.url;
       await user.save();
     });
-  } else if (req.body.defaultAvatar && req.body.defaultAvatar === defaultAvatar) {
+  } else if (
+    req.body.defaultAvatar &&
+    req.body.defaultAvatar === defaultAvatar
+  ) {
     user.avatar = defaultAvatar;
   }
 
@@ -316,7 +300,10 @@ const updateSelf = asyncHandler(async (req, res) => {
       user.banner = result.url;
       await user.save();
     });
-  } else if (req.body.defaultBanner && req.body.defaultBanner === defaultBanner) {
+  } else if (
+    req.body.defaultBanner &&
+    req.body.defaultBanner === defaultBanner
+  ) {
     user.banner = defaultBanner;
   }
 
@@ -401,7 +388,6 @@ const updateSelf = asyncHandler(async (req, res) => {
 //     });
 //   }
 // });
-
 
 /**
  * Update user role
@@ -523,10 +509,32 @@ const updatePassword = asyncHandler(async (req, res) => {
  * Update email preference
  */
 const updateNotificationSettings = asyncHandler(async (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Durog ang kamote",
-  });
+  const user = await User.findById(req.user.id).select('-password');
+
+  const { receivingEmail } = req.body;
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      error: "User not found",
+    });
+  }
+
+  try {
+    user.receivingEmail = receivingEmail;
+
+    await user.save();
+    res.status(200).json({
+      success: true,
+      message: "Email preferences updated successfully",
+      user
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: "Error updating email preferences",
+    });
+  }
 });
 
 /**
