@@ -302,6 +302,11 @@ const updateSelf = asyncHandler(async (req, res) => {
   const { username, description } = req.body;
   const user = await User.findById(req.user.id).select("-password");
 
+  const actionType = "profile management"
+  const actionDetails = `Update profile`
+  let error
+
+
   const defaultBanner =
     "https://res.cloudinary.com/drlztlr1m/image/upload/v1708332794/memuvo7apu0eqdt4f6mr.svg";
   const defaultAvatar =
@@ -315,13 +320,15 @@ const updateSelf = asyncHandler(async (req, res) => {
   }
 
   if (username && !/^[a-zA-Z_]+$/.test(username)) {
+    error = "Invalid username"
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "failed", additionalContext: error
+    })
     return res.status(400).json({
       success: false,
-      error: "Invalid username",
+      error,
     });
   }
-
-  console.log(req.files);
 
   if (req.files && req.files["avatar"]) {
     const avatar = req.files["avatar"][0];
@@ -370,6 +377,9 @@ const updateSelf = asyncHandler(async (req, res) => {
   }
 
   try {
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "success"
+    })
     await user.save();
     return res
       .status(200)
