@@ -158,35 +158,55 @@ const getSelf = asyncHandler(async (req, res) => {
  */
 const deleteUser = asyncHandler(async (req, res) => {
   const userToDelete = await User.findById(req.params.id);
+  const actionType = 'user management'
+  const actionDetails = `Delete user ${userToDelete.email}`
 
   if (!userToDelete) {
-    res.status(400).json({ success: false, error: "User not found" });
+    createAuditTrail(req, {
+      actionType, actionDetails: "Deleting a user", status: "failed", additionalContext: "Trying to delete a user that doesn't exist"
+    })
+    return res.status(400).json({ success: false, error: "User not found" });
   }
 
   const requestingUser = req.user;
 
   if (userToDelete._id.equals(requestingUser._id)) {
-    res
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "failed", additionalContext: "Trying to delete own account"
+    })
+    return res
       .status(403)
       .json({ success: false, error: "You cannot delete your account." });
-    return;
+    ;
   }
+
+  let deletedUser
 
   if (
     requestingUser.role === "admin" &&
     userToDelete.role !== "admin" &&
     userToDelete.role !== "superadmin"
   ) {
-    const deletedUser = await User.findByIdAndDelete(req.params.id);
-    res.status(200).json({ success: true, deletedUser });
+    deletedUser = await User.findByIdAndDelete(req.params.id);
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "success"
+    })
+    return res.status(200).json({ success: true, deletedUser });
   } else if (
     requestingUser.role === "superadmin" &&
     userToDelete.role !== "superadmin"
   ) {
-    const deletedUser = await User.findByIdAndDelete(req.params.id);
-    res.status(200).json({ success: true, deletedUser });
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "success"
+    })
+    deletedUser = await User.findByIdAndDelete(req.params.id);
+    return res.status(200).json({ success: true, deletedUser });
   } else {
-    res.status(403).json({ success: false, error: "Permission denied" });
+    const error = "Permission denied"
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "failed", additionalContext: error
+    })
+    return res.status(403).json({ success: false, error });
   }
 });
 
