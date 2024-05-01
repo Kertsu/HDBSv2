@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const asyncHandler = require("express-async-handler");
+const AuditTrail = require("../models/auditTrailModel");
 
 const isValidEmail = (email) => {
   const emailRegex = /@(student\.laverdad\.edu\.ph|laverdad\.edu\.ph)$/i;
@@ -67,7 +68,7 @@ const generatePassword = () => {
   return retVal;
 };
 
-async function updateAreaProperty() {
+const updateAreaProperty = asyncHandler(async () => {
   const Hotdesk = require("../models/hotdeskModel");
   try {
     const ranges = [
@@ -80,7 +81,7 @@ async function updateAreaProperty() {
       await Hotdesk.updateMany(
         { deskNumber: { $gte: range.start, $lte: range.end } },
         { $set: { area: range.area } },
-        { multi: true } 
+        { multi: true }
       );
     }
 
@@ -88,14 +89,46 @@ async function updateAreaProperty() {
   } catch (error) {
     console.error("Error updating area property:", error);
   }
-}
+});
+
+const createAuditTrail = asyncHandler(async (req, data) => {
+  const ipAddress =
+    req.ip ||
+    req.headers["x-forwarded-for"] ||
+    req.headers["true-client-ip"] ||
+    req.remoteAddress ||
+    req.socket.remoteAddress ||
+    null;
+  const userId = req.user?._id;
+
+  const { email, actionType, actionDetails, status, additionalContext } = data;
+
+  try {
+    await AuditTrail.create({
+      user: userId ?? null,
+      email: req.user?.email ?? email,
+      actionType,
+      actionDetails,
+      status,
+      additionalContext,
+      ipAddress,
+    });
+  } catch (error) {
+    console.error("Error creating audit trail:", error);
+  }
+
+  // io.emit('new-trail', auditTrail)
+
+  // console.log(io.emit('new-trail', auditTrail))
+});
 
 module.exports = {
-    isValidEmail,
-    hashPassword,
-    isValidPassword,
-    generateToken,
-    bulkDelete,
-    generatePassword,
-    updateAreaProperty
-  };
+  isValidEmail,
+  hashPassword,
+  isValidPassword,
+  generateToken,
+  bulkDelete,
+  generatePassword,
+  updateAreaProperty,
+  createAuditTrail
+};

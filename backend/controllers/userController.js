@@ -6,6 +6,8 @@ const {
   generateToken,
   hashPassword,
   isValidPassword,
+  createAuditTrail,
+  isValidEmail
 } = require("../utils/helpers");
 
 const User = require("../models/userModel");
@@ -22,26 +24,40 @@ const {
  */
 const register = asyncHandler(async (req, res) => {
   const { email } = req.body;
+  let error 
+  const actionType = 'registration'
 
   if (!email) {
+    error = "Please fill in all mandatory fields"
+    createAuditTrail(req, {
+    actionType, actionDetails: `Registration attempt for ${email}`, status: "failed", additionalContext: "Invalid credentials"
+    })
     return res.status(400).json({
       success: false,
-      error: "Please fill in all mandatory fields",
+      error
     });
   }
 
   const userExist = await User.findOne({ email });
 
   if (userExist) {
+    error = "User already exists"
+    createAuditTrail(req, {
+    actionType, actionDetails: `Registration attempt for ${email}`, status: "failed", additionalContext: error
+    })
     return res.status(400).json({
       success: false,
-      error: "User already exists",
+      error,
     });
   }
 
-  // if (!isValidEmail(email)) {
-  //   return res.status(400).json({ success: false, error: "Email not allowed" });
-  // }
+  if (!isValidEmail(email)) {
+    error = "Email not allowed"
+    createAuditTrail(req, {
+    actionType, actionDetails: `Registration attempt for ${email}`, status: "failed", additionalContext: error
+    })
+    return res.status(400).json({ success: false, error});
+  }
 
   // if (password.length < 10 || !isValidPassword(password)) {
   //   return res.status(400).json({
@@ -54,11 +70,12 @@ const register = asyncHandler(async (req, res) => {
   const username = email.split("@")[0];
 
   try {
-    sendCredentials(email, username, res);
-  } catch (error) {
+    sendCredentials(email, username, req, res);
+  } catch (err) {
+    error = "Invalid user data"
     res.status(400).json({
       success: false,
-      error: "Invalid user data",
+      error,
     });
   }
 });

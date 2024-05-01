@@ -8,6 +8,7 @@ const getAuditTrails = asyncHandler(async (req, res) => {
   return res.status(200).json({
     success: true,
     trails,
+    totalDocuments: await AuditTrail.countDocuments(),
   });
 });
 

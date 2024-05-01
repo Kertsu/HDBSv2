@@ -3,7 +3,7 @@ const MailGen = require("mailgen");
 const bcrypt = require("bcryptjs");
 const User = require("../models/userModel");
 const crypto = require("crypto");
-const { generatePassword } = require("./helpers");
+const { generatePassword, createAuditTrail } = require("./helpers");
 
 const setupTransporterAndMailGen = () => {
   let config = {
@@ -39,7 +39,7 @@ const sendEmail = async (message) => {
   }
 };
 
-const sendCredentials = async (email, name, res) => {
+const sendCredentials = async (email, name,req, res) => {
   const password = generatePassword();
   let { mailGenerator } = setupTransporterAndMailGen();
 
@@ -79,13 +79,20 @@ const sendCredentials = async (email, name, res) => {
     });
 
     if (user) {
+      createAuditTrail(req, {
+        actionType: "registration", actionDetails: `Registration attempt for ${email}`, status: "success",
+      })
       return res.status(201).json({
         success: true,
         user,
       });
     } else {
+      const error = "Invalid user data"
       res.status(400);
-      throw new Error("Invalid user data");
+      createAuditTrail(req, {
+        actionType: "registration", actionDetails: `Registration attempt for ${email}`, status: "failed",
+      })
+      throw new Error(error);
     }
   } catch (error) {
     console.error(error);
