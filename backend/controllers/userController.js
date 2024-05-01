@@ -85,20 +85,30 @@ const register = asyncHandler(async (req, res) => {
  */
 const authenticate = asyncHandler(async (req, res) => {
   const { username, email, password } = req.body;
+  const actionType = 'login'
+  const actionDetails = `Login attempt for ${email || username}`
+  let error
 
   const userByEmail = await User.findOne({ email });
   const userByUsername = await User.findOne({ username });
 
   if (!userByEmail && !userByUsername) {
+    error = "Invalid credentials"
+    createAuditTrail(req, {
+      email, actionType, actionDetails, status: "failed", additionalContext: error
+    })
     return res
       .status(400)
-      .json({ success: false, error: "Invalid credentials" });
+      .json({ success: false, error });
   }
 
   const user = userByEmail || userByUsername;
 
   if (await bcrypt.compare(password, user.password)) {
     if (user.isDisabled) {
+      createAuditTrail(req, {
+        email, actionType, actionDetails, status: "failed", additionalContext: "Account is suspended"
+      })
       return res
         .status(400)
         .json({ success: false, error: "Your account is suspended" });
@@ -115,12 +125,19 @@ const authenticate = asyncHandler(async (req, res) => {
       passwordChangedAt: user.passwordChangedAt,
     };
 
-    res.status(200).json({
+    createAuditTrail(req, {
+      email, actionType, actionDetails, status: "success"
+    })
+    return res.status(200).json({
       success: true,
       user: userData,
     });
   } else {
-    res.status(400).json({ success: false, error: "Invalid credentials" });
+    error = "Invalid credentials"
+    createAuditTrail(req, {
+      email, actionType, actionDetails, status: "failed", additionalContext: error
+    })
+    return res.status(400).json({ success: false, error });
   }
 });
 
