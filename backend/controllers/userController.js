@@ -845,7 +845,7 @@ const resetPassword = asyncHandler(async (req, res) => {
     });
   }
 
-  const { passwordResetToken } = user;
+  const { passwordResetToken, email, username } = user;
   const tokenValid = await bcrypt.compare(token, passwordResetToken.token);
   const tokenExpired = passwordResetToken.expiresAt < Date.now();
 
