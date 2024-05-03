@@ -3,7 +3,7 @@ const { protect, isAdmin, canHandleReservation } = require("../middlewares/authM
 const router = require("express").Router();
 
 
-router.get('/', canHandleReservation, getHotdesks)
+router.get('/', protect, getHotdesks)
 
 router.post('/', canHandleReservation, createHotdesk)
 
