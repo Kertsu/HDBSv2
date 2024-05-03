@@ -463,7 +463,14 @@ const updateUser = asyncHandler(async (req, res) => {
 
   const userToUpdate = await User.findById(req.params.id);
 
+  const actionType = ActionType.USER_MANAGEMENT
+  const actionDetails = `update ${userToUpdate.email}`
+  let error
+
   if (!userToUpdate) {
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "failed", additionalContext: "Trying to update a user that does not exist"
+    })
     return res.status(400).json({ success: false, error: "User not found" });
   }
 
@@ -479,6 +486,10 @@ const updateUser = asyncHandler(async (req, res) => {
 
     await userToUpdate.save();
 
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "success", additionalContext: `${userToUpdate.email} updated`
+    })
+
     return res.status(200).json({ success: true, updatedUser: userToUpdate });
   } else if (
     requestingUser.role === "admin" &&
@@ -493,9 +504,17 @@ const updateUser = asyncHandler(async (req, res) => {
 
     await userToUpdate.save();
 
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "success", additionalContext: `${userToUpdate.email} updated`
+    })
+
     return res.status(200).json({ success: true, updatedUser: userToUpdate });
   } else {
-    return res.status(403).json({ success: false, error: "Permission denied" });
+    error = "Permission denied"
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "success", additionalContext: error
+    })
+    return res.status(403).json({ success: false, error });
   }
 });
 
@@ -663,6 +682,9 @@ const firstChangePassword = asyncHandler(async (req, res) => {
   }
 
   if (user.passwordChangedAt !== null) {
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "failed", additionalContext: "Password already changed"
+    })
     return res.status(400).json({
       success: false,
       error: "Invalid action",
