@@ -13,8 +13,8 @@ connectDB();
 const allowedOrigins = [
   "http://localhost:4200",
   "http://localhost:8000",
-  "https://hdbsv2.onrender.com",
-  "https://desksync-hdbsv2.vercel.app"
+  "https://hdbsv2-r473.onrender.com",
+  "https://desksync-v2.vercel.app"
 ];
 
 app.use(
