@@ -821,7 +821,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
   }
 
   try {
-    sendMagicLink(user, res);
+    sendMagicLink(user,req, res);
   } catch (error) {
     return res.status(400).json({
       success: false,

@@ -136,7 +136,7 @@ const sendMagicLink = async (user, req, res) => {
     await sendEmail(message);
     await user.save();
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Password reset link has been sent to your email",
     });
