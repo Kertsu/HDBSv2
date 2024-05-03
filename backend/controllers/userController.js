@@ -19,13 +19,14 @@ const {
   sendMagicLink,
   sendPasswordResetSuccess,
 } = require("../utils/mail.util");
+const ActionType = require("../utils/trails.enum");
 /**
  * Register a user
  */
 const register = asyncHandler(async (req, res) => {
   const { email } = req.body;
   let error 
-  const actionType = 'registration'
+  const actionType = ActionType.REGISTRATION
 
   if (!email) {
     error = "Please fill in all mandatory fields"
@@ -85,7 +86,7 @@ const register = asyncHandler(async (req, res) => {
  */
 const authenticate = asyncHandler(async (req, res) => {
   const { username, email, password } = req.body;
-  const actionType = 'login'
+  const actionType = ActionType.LOGIN
   const actionDetails = `Login attempt for ${email || username}`
   let error
 
@@ -158,7 +159,7 @@ const getSelf = asyncHandler(async (req, res) => {
  */
 const deleteUser = asyncHandler(async (req, res) => {
   const userToDelete = await User.findById(req.params.id);
-  const actionType = 'user management'
+  const actionType = ActionType.USER_MANAGEMENT
   const actionDetails = `Delete user ${userToDelete.email}`
 
   if (!userToDelete) {
@@ -302,7 +303,7 @@ const updateSelf = asyncHandler(async (req, res) => {
   const { username, description } = req.body;
   const user = await User.findById(req.user.id).select("-password");
 
-  const actionType = "profile management"
+  const actionType = ActionType.PROFILE_MANAGEMENT
   const actionDetails = `Update profile`
   let error
 
@@ -504,7 +505,7 @@ const updateUser = asyncHandler(async (req, res) => {
 const updatePassword = asyncHandler(async (req, res) => {
   const { currentPassword, newPassword, confirmPassword } = req.body;
   const user = await User.findById(req.user.id);
-  const actionType = "profile management"
+  const actionType = ActionType.PROFILE_MANAGEMENT
   const actionDetails = `change password`
   let error
   
@@ -526,13 +527,13 @@ const updatePassword = asyncHandler(async (req, res) => {
   );
 
   if (currentTime - passwordChangedAt < oneDay) {
-    error = `Change password in cooldown.`
+    error = `Change password in cooldown`
     createAuditTrail(req, {
       actionType, actionDetails, status: "failed", additionalContext: error
     })
     return res.status(400).json({
       success: false,
-      error: `${error} ${cooldownRemaining} hours remaining`,
+      error: `${error}. ${cooldownRemaining} hours remaining`,
     });
   }
 
@@ -838,6 +839,11 @@ const resetPassword = asyncHandler(async (req, res) => {
 
   const user = await User.findById(id);
 
+  const actionType = ActionType.PROFILE_MANAGEMENT
+  const actionDetails = `reset password`
+  let error
+
+
   if (!user) {
     return res.status(400).json({
       success: false,
@@ -850,23 +856,35 @@ const resetPassword = asyncHandler(async (req, res) => {
   const tokenExpired = passwordResetToken.expiresAt < Date.now();
 
   if (!tokenValid) {
+    error = "Invalid reset token"
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "failed", additionalContext: error
+    })
     return res.status(400).json({
       success: false,
-      error: "Invalid reset token",
+      error,
     });
   }
 
   if (tokenExpired) {
+    error = "Reset token expired"
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "failed", additionalContext: error
+    })
     return res.status(400).json({
       success: false,
-      error: "Reset token expired",
+      error,
     });
   }
 
   if (password !== confirmPassword) {
+    error = "Passwords did not match"
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "failed", additionalContext: error
+    })
     return res.status(400).json({
       success: false,
-      error: "Passwords did not match",
+      error,
     });
   }
 
@@ -878,13 +896,21 @@ const resetPassword = asyncHandler(async (req, res) => {
   );
 
   if (currentTime - passwordChangedAt < oneDay) {
+    error = `Change password in cooldown`
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "failed", additionalContext: error
+    })
     return res.status(400).json({
       success: false,
-      error: `Change password in cooldown. ${cooldownRemaining} hours remaining.`,
+      error: `${error}. ${cooldownRemaining} hours remaining.`,
     });
   }
 
   if (!isValidPassword(password)) {
+    error = "Password should be at least 10 characters long and include letters, numbers, and symbols."
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "failed", additionalContext: error
+    })
     return res.status(400).json({
       success: false,
       error:
@@ -899,7 +925,7 @@ const resetPassword = asyncHandler(async (req, res) => {
   user.passwordResetToken = undefined;
 
   try {
-    sendPasswordResetSuccess(user, res);
+    sendPasswordResetSuccess(user,req, res);
   } catch (error) {
     return res.status(400).json({
       success: false,
