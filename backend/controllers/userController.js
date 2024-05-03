@@ -504,6 +504,10 @@ const updateUser = asyncHandler(async (req, res) => {
 const updatePassword = asyncHandler(async (req, res) => {
   const { currentPassword, newPassword, confirmPassword } = req.body;
   const user = await User.findById(req.user.id);
+  const actionType = "profile management"
+  const actionDetails = `change password`
+  let error
+  
 
   if (!user) {
     return res.status(404).json({
@@ -522,32 +526,47 @@ const updatePassword = asyncHandler(async (req, res) => {
   );
 
   if (currentTime - passwordChangedAt < oneDay) {
+    error = `Change password in cooldown.`
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "failed", additionalContext: error
+    })
     return res.status(400).json({
       success: false,
-      error: `Change password in cooldown. ${cooldownRemaining} hours remaining.`,
+      error: `${error} ${cooldownRemaining} hours remaining`,
     });
   }
 
   const isMatch = await bcrypt.compare(currentPassword, user.password);
   if (!isMatch) {
+    error = "Current password is incorrect"
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "failed", additionalContext: error
+    })
     return res.status(400).json({
       success: false,
-      error: "Current password is incorrect",
+      error,
     });
   }
 
   if (newPassword !== confirmPassword) {
+    error = "Passwords did not match"
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "failed", additionalContext: error
+    })
     return res.status(400).json({
       success: false,
-      error: "Passwords did not match",
+      error,
     });
   }
 
   if (!isValidPassword(newPassword)) {
+    error = "Invalid password. It should be at least 10 characters long and contain a mix of alphanumeric characters, lowercase, uppercase, and symbols"
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "failed", additionalContext: error
+    })
     return res.status(400).json({
       success: false,
-      error:
-        "Invalid password. It should be at least 10 characters long and contain a mix of alphanumeric characters, lowercase, uppercase, and symbols",
+      error
     });
   }
 
@@ -558,9 +577,13 @@ const updatePassword = asyncHandler(async (req, res) => {
 
   try {
     await user.save();
-    res
+    const message = "Password updated successfully"
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "success", additionalContext: message
+    })
+    return res
       .status(200)
-      .json({ success: true, message: "Password updated successfully" });
+      .json({ success: true, message });
   } catch (error) {
     return res.status(500).json({
       success: false,
