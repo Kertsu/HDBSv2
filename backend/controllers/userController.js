@@ -651,6 +651,10 @@ const firstChangePassword = asyncHandler(async (req, res) => {
   const { password, confirmPassword } = req.body;
   const user = await User.findById(req.user.id);
 
+  const actionType = ActionType.PROFILE_MANAGEMENT
+  const actionDetails = `change password`
+  let error
+
   if (!user) {
     return res.status(404).json({
       success: false,
@@ -666,17 +670,24 @@ const firstChangePassword = asyncHandler(async (req, res) => {
   }
 
   if (password !== confirmPassword) {
+    error = "Passwords did not match"
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "failed", additionalContext: error
+    })
     return res.status(400).json({
       success: false,
-      error: "Passwords did not match",
+      error,
     });
   }
 
   if (!isValidPassword(password)) {
+    error = "Password should be at least 10 characters long and include letters, numbers, and symbols."
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "failed", additionalContext: error
+    })
     return res.status(400).json({
       success: false,
-      error:
-        "Password should be at least 10 characters long and include letters, numbers, and symbols.",
+      error,
     });
   }
 
@@ -687,9 +698,13 @@ const firstChangePassword = asyncHandler(async (req, res) => {
 
   try {
     await user.save();
-    res
+    const message = "Password updated successfully"
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "success", additionalContext: message
+    })
+    return res
       .status(200)
-      .json({ success: true, message: "Password updated successfully" });
+      .json({ success: true, message });
   } catch (error) {
     return res.status(500).json({
       success: false,
