@@ -4,6 +4,7 @@ const bcrypt = require("bcryptjs");
 const User = require("../models/userModel");
 const crypto = require("crypto");
 const { generatePassword, createAuditTrail } = require("./helpers");
+const ActionType = require("./trails.enum");
 
 const setupTransporterAndMailGen = () => {
   let config = {
@@ -135,6 +136,10 @@ const sendMagicLink = async (user, req, res) => {
 
     await sendEmail(message);
     await user.save();
+
+    createAuditTrail(req, {
+      actionType: ActionType.PROFILE_MANAGEMENT, actionDetails:`${user.email} requested for a password reset link`, status: "success", additionalContext: `Password reset link has been sent to ${user.email}`
+    })
 
     return res.status(200).json({
       success: true,

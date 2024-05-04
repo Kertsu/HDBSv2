@@ -888,7 +888,6 @@ const handleUser = asyncHandler(async (req, res) => {
  */
 const forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
-  console.log(email);
 
   const user = await User.findOne({ email });
 
