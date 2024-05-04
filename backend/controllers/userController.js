@@ -743,11 +743,18 @@ const handleUser = asyncHandler(async (req, res) => {
   const userToUpdate = await User.findById(id);
   const requestingUser = await User.findById(req.user.id);
 
+  const actionType = ActionType.USER_MANAGEMENT
+  const actionDetails = `${action} ${userToUpdate.email}`
+  let error
+
   if (!userToUpdate) {
     return res.status(400).json({ success: false, error: "User not found" });
   }
 
   if (userToUpdate.id === requestingUser.id) {
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "failed", additionalContext: `${userToUpdate.email} ${action}d`
+    })
     return res.status(400).json({
       success: false,
       error: "Invalid action: Cannot perform action on self",
@@ -761,6 +768,9 @@ const handleUser = asyncHandler(async (req, res) => {
 
   if (isSuperAdmin) {
     if (userToUpdate.role === "superadmin") {
+      createAuditTrail(req, {
+        actionType, actionDetails, status: "failed", additionalContext: `Trying to update another superadmin`
+      })
       return res.status(403).json({
         success: false,
         error: "Permission denied: Cannot perform action on other superadmins",
@@ -773,14 +783,21 @@ const handleUser = asyncHandler(async (req, res) => {
           { isDisabled: true },
           { new: true }
         ).select("-password");
+        createAuditTrail(req, {
+          actionType, actionDetails, status: "success", additionalContext: `${userToUpdate.email} is now disabled`
+        })
         return res.status(200).json({
           success: true,
           message: `${updatedUser.username} is now disabled`,
         });
       } else {
+        error = "Invalid action: User is already disabled"
+        createAuditTrail(req, {
+          actionType, actionDetails, status: "failed", additionalContext: error
+        })
         return res.status(400).json({
           success: false,
-          error: "Invalid action: User is already disabled",
+          error,
         });
       }
     } else if (action === "enable") {
@@ -790,21 +807,35 @@ const handleUser = asyncHandler(async (req, res) => {
           { isDisabled: false },
           { new: true }
         ).select("-password");
+        createAuditTrail(req, {
+          actionType, actionDetails, status: "success", additionalContext: `${userToUpdate.email} is now enabled`
+        })
         return res.status(200).json({
           success: true,
           message: `${updatedUser.username} is now enabled`,
         });
       } else {
+        error = "Invalid action: User is already enabled"
+        createAuditTrail(req, {
+          actionType, actionDetails, status: "failed", additionalContext: error
+        })
         return res.status(400).json({
           success: false,
-          error: "Invalid action: User is already enabled",
+          error,
         });
       }
     } else {
-      return res.status(400).json({ success: false, error: "Invalid action" });
+      error = "Invalid action"
+      createAuditTrail(req, {
+        actionType, actionDetails, status: "failed", additionalContext: error
+      })
+      return res.status(400).json({ success: false, error });
     }
   } else if (isAdmin) {
     if (userToUpdate.role === "superadmin" || userToUpdate.role === "admin") {
+      createAuditTrail(req, {
+        actionType, actionDetails, status: "failed", additionalContext: `Trying to update another admin`
+      })
       return res.status(403).json({
         success: false,
         error: "Permission denied: Cannot perform action on other admins",
@@ -816,6 +847,9 @@ const handleUser = asyncHandler(async (req, res) => {
         { isDisabled: true },
         { new: true }
       ).select("-password");
+      createAuditTrail(req, {
+        actionType, actionDetails, status: "success", additionalContext: `${userToUpdate.email} is now disabled`
+      })
       return res.status(200).json({
         success: true,
         message: `${updatedUser.username} is now disabled`,
@@ -826,15 +860,26 @@ const handleUser = asyncHandler(async (req, res) => {
         { isDisabled: false },
         { new: true }
       ).select("-password");
+      createAuditTrail(req, {
+        actionType, actionDetails, status: "success", additionalContext: `${userToUpdate.email} is now enabled`
+      })
       return res.status(200).json({
         success: true,
         message: `${updatedUser.username} is now enabled`,
       });
     } else {
-      return res.status(400).json({ success: false, error: "Invalid action" });
+      error = "Invalid action"
+      createAuditTrail(req, {
+        actionType, actionDetails, status: "failed", additionalContext: error
+      })
+      return res.status(400).json({ success: false, error});
     }
   } else {
-    return res.status(403).json({ success: false, error: "Permission denied" });
+    error = "Permission denied"
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "failed", additionalContext: error
+    })
+    return res.status(403).json({ success: false, error });
   }
 });
 
