@@ -1,5 +1,7 @@
 const Switch = require('../models/switchModel')
-const asyncHandler = require('express-async-handler')
+const asyncHandler = require('express-async-handler');
+const { createAuditTrail } = require('../utils/helpers');
+const ActionType = require('../utils/trails.enum');
 
 const handleSwitch = asyncHandler(async (req, res) => {
   const { autoAccepting } = req.body;
@@ -13,6 +15,10 @@ const handleSwitch = asyncHandler(async (req, res) => {
     { autoAccepting },
     { new: true, upsert: true }
   );
+
+  createAuditTrail(req, {
+    actionType: ActionType.RESERVATION_MANAGEMENT, actionDetails: `turned ${autoAccepting ? "on" : "off"} automatic accepting of reservations`, status: "success"
+  })
 
   return res.status(200).json({success: true, updatedSwitch});
 });
