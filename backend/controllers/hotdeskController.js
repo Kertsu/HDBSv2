@@ -101,6 +101,10 @@ const createHotdesk = asyncHandler(async (req, res) => {
 const deleteHotdesk = asyncHandler(async (req, res) => {
   const hotdesk = await Hotdesk.findById(req.params.id);
 
+  const actionType = ActionType.DESK_MANAGEMENT;
+  const actionDetails = `delete hotdesk`;
+  let error;
+
   if (!hotdesk) {
     res.status(400).json({
       success: false,
@@ -111,7 +115,14 @@ const deleteHotdesk = asyncHandler(async (req, res) => {
   await DeskNumber.findOneAndDelete({ number: hotdesk.deskNumber });
   const deletedDesk = await Hotdesk.findByIdAndDelete(req.params.id);
 
-  res.status(200).json({ success: true, desk: deletedDesk });
+  createAuditTrail(req, {
+    actionType,
+    actionDetails,
+    status: "success",
+    additionalContext: `${deletedDesk.title} deleted`,
+  });
+
+  return res.status(200).json({ success: true, desk: deletedDesk });
 });
 
 const updateHotdesk = asyncHandler(async (req, res) => {
