@@ -5,7 +5,8 @@ const ActionType = {
     LOGOUT: 'logout',
     RESERVATION: "reservation",
     USER_MANAGEMENT: 'user management',
-    RESERVATION_MANAGEMENT: 'reservation management'
+    RESERVATION_MANAGEMENT: 'reservation management',
+    DESK_MANAGEMENT: 'desk management'
 }
 
 module.exports = ActionType;

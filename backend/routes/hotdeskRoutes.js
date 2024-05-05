@@ -1,5 +1,5 @@
 const { getHotdesks, createHotdesk, deleteHotdesk, updateHotdesk } = require("../controllers/hotdeskController");
-const { protect, isAdmin, canHandleReservation } = require("../middlewares/authMiddleware");
+const { protect, canHandleReservation } = require("../middlewares/authMiddleware");
 const router = require("express").Router();
 
 

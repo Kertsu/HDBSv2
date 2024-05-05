@@ -3,6 +3,8 @@ const asyncHandler = require("express-async-handler");
 const queryHelper = require("../utils/queryHelper");
 const DeskNumber = require("../models/deskNumberModel");
 const Reservation = require("../models/reservationModel");
+const ActionType = require("../utils/trails.enum");
+const { createAuditTrail } = require("../utils/helpers");
 
 const getHotdesks = asyncHandler(async (req, res) => {
   try {
@@ -21,6 +23,11 @@ const getHotdesks = asyncHandler(async (req, res) => {
 
 const createHotdesk = asyncHandler(async (req, res) => {
   const { deskNumber, essentials } = req.body;
+
+  const actionType = ActionType.DESK_MANAGEMENT;
+  const actionDetails = `create hotdesk`;
+  let error;
+
   if (!deskNumber) {
     return res.status(400).json({
       success: false,
@@ -31,15 +38,29 @@ const createHotdesk = asyncHandler(async (req, res) => {
   const existingDesk = await Hotdesk.findOne({ deskNumber });
 
   if (!(deskNumber >= 1 && deskNumber <= 80)) {
+    error = "Invalid desk number"
+    createAuditTrail(req, {
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: error,
+    });
     return res
       .status(400)
-      .json({ success: false, error: "Invalid desk number" });
+      .json({ success: false, error  });
   }
 
   if (existingDesk) {
+    error = "Desk already exists"
+    createAuditTrail(req, {
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: error,
+    });
     return res
       .status(400)
-      .json({ success: false, error: "Desk already exists" });
+      .json({ success: false, error });
   }
 
   let area;
@@ -64,7 +85,14 @@ const createHotdesk = asyncHandler(async (req, res) => {
     });
   }
 
-  res.status(201).json({
+  createAuditTrail(req, {
+    actionType,
+    actionDetails,
+    status: "success",
+    additionalContext: `${hotdesk.title} created`,
+  });
+
+  return res.status(201).json({
     success: true,
     hotdesk,
   });
