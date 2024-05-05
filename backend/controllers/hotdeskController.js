@@ -103,7 +103,6 @@ const deleteHotdesk = asyncHandler(async (req, res) => {
 
   const actionType = ActionType.DESK_MANAGEMENT;
   const actionDetails = `delete hotdesk`;
-  let error;
 
   if (!hotdesk) {
     res.status(400).json({
@@ -130,6 +129,10 @@ const updateHotdesk = asyncHandler(async (req, res) => {
   const { essentials, status } = req.body;
   const currentDate = new Date();
 
+  const actionType = ActionType.DESK_MANAGEMENT;
+  const actionDetails = `update hotdesk`;
+  let error;
+
   const reservedDesks = [];
   currentDate.setUTCHours(0, 0, 0, 0);
 
@@ -142,7 +145,13 @@ const updateHotdesk = asyncHandler(async (req, res) => {
   }
 
   if (reservedDesks.includes(hotdesk.deskNumber)) {
-    res.status(400).json({
+    createAuditTrail(req, {
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: "The hotdesk cannot be updated as of the moment",
+    });
+    return res.status(400).json({
       success: false,
       error:
         "The hotdesk cannot be updated. Please choose an available hotdesk or try again later.",
@@ -152,7 +161,13 @@ const updateHotdesk = asyncHandler(async (req, res) => {
       essentials == null ? hotdesk.workspaceEssentials : essentials;
     hotdesk.status = status ?? hotdesk.status;
     await hotdesk.save();
-    res.status(200).json({ succcess: true, hotdesk });
+    createAuditTrail(req, {
+      actionType,
+      actionDetails,
+      status: "success",
+      additionalContext: `${hotdesk.title} updated`,
+    });
+    return res.status(200).json({ succcess: true, hotdesk });
   }
 });
 
