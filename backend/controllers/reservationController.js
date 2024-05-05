@@ -102,7 +102,7 @@ const abortReservation = asyncHandler(async (req, res) => {
   const reservation = await Reservation.findById(id);
 
   const actionType = ActionType.RESERVATION_MANAGEMENT
-  const actionDetails = `handle reservation`
+  const actionDetails = `abort reservation`
   let error
 
   if (!reservation) {
@@ -167,6 +167,10 @@ const cancelReservation = asyncHandler(async (req, res) => {
     _id: req.params.id,
   });
 
+  const actionType = ActionType.RESERVATION_MANAGEMENT
+  const actionDetails = `cancel reservation`
+  let error
+
   if (!reservation) {
     return res
       .status(400)
@@ -185,13 +189,20 @@ const cancelReservation = asyncHandler(async (req, res) => {
       type: "CANCELED",
     });
     await reservation.deleteOne();
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "success", additionalContext: `Canceled their reservation on Hotdesk #${reservation.deskNumber} on ${reservation.date}`
+    })
     return res
       .status(200)
       .json({ success: true, message: `Reservation canceled`, reservation });
   } else {
+    error = "Invalid request. Reservation cannot be canceled."
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "failed", additionalContext: error
+    })
     return res.status(400).json({
       success: false,
-      error: "Invalid request. Reservation cannot be canceled.",
+      error,
     });
   }
 });
