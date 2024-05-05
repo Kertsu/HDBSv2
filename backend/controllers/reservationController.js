@@ -8,6 +8,12 @@ const queryHelper = require("../utils/queryHelper");
 const ActionType = require("../utils/trails.enum");
 const { createAuditTrail } = require("../utils/helpers");
 
+const dateOptions = {
+  weekday: "long",
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+}
 
 const getReservations = asyncHandler(async (req, res) => {
   const reservations = await queryHelper(Reservation, req.query, "reservation");
@@ -21,9 +27,9 @@ const getReservations = asyncHandler(async (req, res) => {
 const handleReservation = asyncHandler(async (req, res) => {
   const { id, action } = req.params;
 
-  const actionType = ActionType.RESERVATION_MANAGEMENT
-  const actionDetails = `handle reservation`
-  let error
+  const actionType = ActionType.RESERVATION_MANAGEMENT;
+  const actionDetails = `handle reservation`;
+  let error;
 
   const reservation = await Reservation.findById(id);
   if (!reservation) {
@@ -41,10 +47,13 @@ const handleReservation = asyncHandler(async (req, res) => {
   }
 
   if (reservation.status != "PENDING") {
-    error = "Invalid request"
+    error = "Invalid request";
     createAuditTrail(req, {
-      actionType, actionDetails, status: "failed", additionalContext: error
-    })
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: error,
+    });
     return res.status(400).json({ success: false, error });
   }
 
@@ -59,8 +68,11 @@ const handleReservation = asyncHandler(async (req, res) => {
     //     updatedReservation.deskNumber
     //   );
     createAuditTrail(req, {
-      actionType, actionDetails, status: "success", additionalContext: `Reservation has been approved by ${req.user.username}`
-    })
+      actionType,
+      actionDetails,
+      status: "success",
+      additionalContext: `Reservation has been approved by ${req.user.username}`,
+    });
 
     return res.status(200).json({
       success: true,
@@ -79,17 +91,23 @@ const handleReservation = asyncHandler(async (req, res) => {
       mode: reservation.mode,
     });
     createAuditTrail(req, {
-      actionType, actionDetails, status: "success", additionalContext: `Reservation has been rejected by ${req.user.username}`
-    })
+      actionType,
+      actionDetails,
+      status: "success",
+      additionalContext: `Reservation has been rejected by ${req.user.username}`,
+    });
     return res.status(200).json({
       success: true,
       reservation,
     });
   } else {
-    error = "Invalid action"
+    error = "Invalid action";
     createAuditTrail(req, {
-      actionType, actionDetails, status: "failed", additionalContext: error
-    })
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: error,
+    });
     return res.status(400).json({
       success: false,
       error,
@@ -101,9 +119,9 @@ const abortReservation = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const reservation = await Reservation.findById(id);
 
-  const actionType = ActionType.RESERVATION_MANAGEMENT
-  const actionDetails = `abort reservation`
-  let error
+  const actionType = ActionType.RESERVATION_MANAGEMENT;
+  const actionDetails = `abort reservation`;
+  let error;
 
   if (!reservation) {
     return res
@@ -124,16 +142,22 @@ const abortReservation = asyncHandler(async (req, res) => {
     });
     await reservation.deleteOne();
     createAuditTrail(req, {
-      actionType, actionDetails, status: "success", additionalContext: `Reservation has been aborted by ${req.user.username}`
-    })
+      actionType,
+      actionDetails,
+      status: "success",
+      additionalContext: `Reservation has been aborted by ${req.user.username}`,
+    });
     return res
       .status(200)
       .json({ success: true, message: `Reservation aborted`, reservation });
   } else {
-    error = "Invalid request"
+    error = "Invalid request";
     createAuditTrail(req, {
-      actionType, actionDetails, status: "failed", additionalContext: error
-    })
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: error,
+    });
     return res.status(400).json({ success: false, error });
   }
 });
@@ -167,9 +191,9 @@ const cancelReservation = asyncHandler(async (req, res) => {
     _id: req.params.id,
   });
 
-  const actionType = ActionType.RESERVATION_MANAGEMENT
-  const actionDetails = `cancel reservation`
-  let error
+  const actionType = ActionType.RESERVATION_MANAGEMENT;
+  const actionDetails = `cancel reservation`;
+  let error;
 
   if (!reservation) {
     return res
@@ -189,17 +213,28 @@ const cancelReservation = asyncHandler(async (req, res) => {
       type: "CANCELED",
     });
     await reservation.deleteOne();
+
+    const formattedDate = new Date(reservation.date).toLocaleDateString(undefined, dateOptions);
+
     createAuditTrail(req, {
-      actionType, actionDetails, status: "success", additionalContext: `Canceled their reservation on Hotdesk #${reservation.deskNumber} on ${reservation.date}`
-    })
+      actionType,
+      actionDetails,
+      status: "success",
+      additionalContext: `Canceled their reservation on Hotdesk #${
+        reservation.deskNumber
+      } on ${formattedDate}`,
+    });
     return res
       .status(200)
       .json({ success: true, message: `Reservation canceled`, reservation });
   } else {
-    error = "Invalid request. Reservation cannot be canceled."
+    error = "Invalid request. Reservation cannot be canceled.";
     createAuditTrail(req, {
-      actionType, actionDetails, status: "failed", additionalContext: error
-    })
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: error,
+    });
     return res.status(400).json({
       success: false,
       error,
@@ -211,6 +246,10 @@ const reserve = asyncHandler(async (req, res) => {
   const { date, startTime, endTime, deskNumber, mode } = req.body;
   const desks = Array.from({ length: 80 }, (_, index) => index + 1);
   const desk = await Hotdesk.findOne({ deskNumber });
+
+  const actionType = ActionType.RESERVATION;
+  const actionDetails = `reserve desk`;
+  let error;
 
   const currentDate = new Date();
   const selectedDate = new Date(date);
@@ -225,17 +264,30 @@ const reserve = asyncHandler(async (req, res) => {
     });
   }
 
+  const minDate = new Date();
   const twoWeeksFromToday = new Date();
-  twoWeeksFromToday.setDate(currentDate.getDate() + 14);
+  twoWeeksFromToday.setDate(currentDate.getDate() + 16);
+  minDate.setDate(currentDate.getDate() + 2);
 
+  const minDateReset = new Date(
+    minDate.toISOString().split("T")[0] + "T00:00:00.000Z"
+  );
+
+  console.log("reset", minDateReset);
   if (
-    (selectedDate <= currentDate || selectedDate > twoWeeksFromToday) &&
+    (selectedDate < minDateReset || selectedDate > twoWeeksFromToday) &&
     mode !== 1
   ) {
+    error = "Invalid date range";
+    createAuditTrail(req, {
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: error,
+    });
     return res.status(400).json({
       success: false,
-      error:
-        "Invalid date range. Please select a date not earlier than today and not greater than a 2-week span.",
+      error,
     });
   }
 
@@ -251,14 +303,25 @@ const reserve = asyncHandler(async (req, res) => {
   });
 
   if (existingReservation) {
+    createAuditTrail(req, {
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: "Already have a reservation for this date",
+    });
     return res.status(400).json({
       success: false,
       error: "You already have a reservation for this date.",
     });
   } else if (reservedHotdesk || desk.status === "UNAVAILABLE") {
-    return res
-      .status(400)
-      .json({ success: false, error: "Hotdesk is unavailable" });
+    error = "Hotdesk is unavailable";
+    createAuditTrail(req, {
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: error,
+    });
+    return res.status(400).json({ success: false, error });
   } else {
     if (!desks.includes(deskNumber)) {
       return res
@@ -284,8 +347,13 @@ const reserve = asyncHandler(async (req, res) => {
         //     sendReservationApproved(req.user.email, req.user.name, deskNumber)
         //   }
 
+        const formattedDate = new Date(date).toLocaleDateString(undefined, dateOptions);
+        createAuditTrail(req, {
+          actionType, actionDetails, status: "success", additionalContext: `Reserved for Hotdesk #${deskNumber} on ${formattedDate}`
+        })
         return res.status(201).json({ success: true, newReservation });
       } catch (error) {
+        console.log("3grd");
         return res
           .status(400)
           .json({ success: false, error: "Failed to create a reservation." });
@@ -304,13 +372,11 @@ const getHistory = asyncHandler(async (req, res) => {
   const filteredReservations = reservations.filter(
     (reservation) => reservation.mode == 0
   );
-  return res
-    .status(200)
-    .json({
-      success: true,
-      reservations: filteredReservations,
-      totalDocuments: await ReservationHistory.countDocuments({ mode: 0 }),
-    });
+  return res.status(200).json({
+    success: true,
+    reservations: filteredReservations,
+    totalDocuments: await ReservationHistory.countDocuments({ mode: 0 }),
+  });
 });
 
 const getSelfHistory = asyncHandler(async (req, res) => {
