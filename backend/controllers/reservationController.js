@@ -101,6 +101,10 @@ const abortReservation = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const reservation = await Reservation.findById(id);
 
+  const actionType = ActionType.RESERVATION_MANAGEMENT
+  const actionDetails = `handle reservation`
+  let error
+
   if (!reservation) {
     return res
       .status(400)
@@ -119,11 +123,18 @@ const abortReservation = asyncHandler(async (req, res) => {
       mode: reservation.mode,
     });
     await reservation.deleteOne();
-    res
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "success", additionalContext: `Reservation has been aborted by ${req.user.username}`
+    })
+    return res
       .status(200)
       .json({ success: true, message: `Reservation aborted`, reservation });
   } else {
-    res.status(400).json({ success: false, error: "Invalid request" });
+    error = "Invalid request"
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "failed", additionalContext: error
+    })
+    return res.status(400).json({ success: false, error });
   }
 });
 
