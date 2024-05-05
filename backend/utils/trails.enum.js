@@ -3,6 +3,7 @@ const ActionType = {
     REGISTRATION: 'registration',
     LOGIN: 'login',
     LOGOUT: 'logout',
+    RESERVATION: "reservation",
     USER_MANAGEMENT: 'user management',
     RESERVATION_MANAGEMENT: 'reservation management'
 }

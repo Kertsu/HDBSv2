@@ -5,6 +5,9 @@ const Hotdesk = require("../models/hotdeskModel");
 const ReservationHistory = require("../models/reservationHistoryModel");
 const Switch = require("../models/switchModel");
 const queryHelper = require("../utils/queryHelper");
+const ActionType = require("../utils/trails.enum");
+const { createAuditTrail } = require("../utils/helpers");
+
 
 const getReservations = asyncHandler(async (req, res) => {
   const reservations = await queryHelper(Reservation, req.query, "reservation");
@@ -17,6 +20,10 @@ const getReservations = asyncHandler(async (req, res) => {
 
 const handleReservation = asyncHandler(async (req, res) => {
   const { id, action } = req.params;
+
+  const actionType = ActionType.RESERVATION_MANAGEMENT
+  const actionDetails = `handle reservation`
+  let error
 
   const reservation = await Reservation.findById(id);
   if (!reservation) {
@@ -34,7 +41,11 @@ const handleReservation = asyncHandler(async (req, res) => {
   }
 
   if (reservation.status != "PENDING") {
-    return res.status(400).json({ success: false, error: "Invalid request" });
+    error = "Invalid request"
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "failed", additionalContext: error
+    })
+    return res.status(400).json({ success: false, error });
   }
 
   if (action == "approve") {
@@ -47,6 +58,9 @@ const handleReservation = asyncHandler(async (req, res) => {
     //     user.name,
     //     updatedReservation.deskNumber
     //   );
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "success", additionalContext: `Reservation has been approved by ${req.user.username}`
+    })
 
     return res.status(200).json({
       success: true,
@@ -64,15 +78,21 @@ const handleReservation = asyncHandler(async (req, res) => {
       type: "REJECTED",
       mode: reservation.mode,
     });
-
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "success", additionalContext: `Reservation has been rejected by ${req.user.username}`
+    })
     return res.status(200).json({
       success: true,
       reservation,
     });
   } else {
+    error = "Invalid action"
+    createAuditTrail(req, {
+      actionType, actionDetails, status: "failed", additionalContext: error
+    })
     return res.status(400).json({
       success: false,
-      error: "Invalid action",
+      error,
     });
   }
 });
