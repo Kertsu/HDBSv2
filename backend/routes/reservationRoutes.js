@@ -2,7 +2,7 @@ const { getReservations, handleReservation, abortReservation, getSelfReservation
 const { protect, isAdmin, canHandleReservation, } = require("../middlewares/authMiddleware");
 const router = require("express").Router();
 
-router.get('/', canHandleReservation, getReservations)
+router.get('/', protect, getReservations)
 
 router.patch('/:id/action/:action', canHandleReservation, handleReservation)
 
