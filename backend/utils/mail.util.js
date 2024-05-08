@@ -151,7 +151,7 @@ const sendMagicLink = async (user, req, res) => {
   }
 };
 
-const sendPasswordResetSuccess = async (user, res) => {
+const sendPasswordResetSuccess = async (user,req, res) => {
   let { mailGenerator } = setupTransporterAndMailGen();
 
   var emailMessage = {
