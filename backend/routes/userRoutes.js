@@ -17,15 +17,15 @@ const {
   resetPassword,
   validateResetToken,
 } = require("../controllers/userController");
-const { protect, isAdmin } = require("../middlewares/authMiddleware");
+const { protect, isAdmin, canHandleReservation } = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/multer");
 const { bulkDelete } = require("../utils/helpers");
 const User = require("../models/userModel");
 
 const router = require("express").Router();
 
-// Get all users (Admin only)
-router.get("/", isAdmin, getUsers);
+// Get all users 
+router.get("/", canHandleReservation, getUsers);
 
 // Register user
 router.post("/register", isAdmin, register);
