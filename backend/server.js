@@ -50,7 +50,7 @@ io.on("connection", (socket) => {
   });
 });
 
-app.set("trust proxy", true);
+// app.set("trust proxy", true);
 
 app.use(express.json());
 app.use(urlencoded({ extended: true }));

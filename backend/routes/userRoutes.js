@@ -17,7 +17,7 @@ const {
   resetPassword,
   validateResetToken,
 } = require("../controllers/userController");
-const { protect, isAdmin, canHandleReservation } = require("../middlewares/authMiddleware");
+const { protect, isAdmin, canHandleReservation, limiter } = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/multer");
 const { bulkDelete } = require("../utils/helpers");
 const User = require("../models/userModel");
@@ -31,7 +31,7 @@ router.get("/", canHandleReservation, getUsers);
 router.post("/register", isAdmin, register);
 
 // Authenticate user
-router.post("/login", authenticate);
+router.post("/login", limiter, authenticate);
 
 // Get self
 router.get("/self", protect, getSelf);

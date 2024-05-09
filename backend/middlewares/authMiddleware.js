@@ -1,7 +1,13 @@
 const jwt = require("jsonwebtoken");
 const asyncHandler = require("express-async-handler");
-
+const rateLimit = require('express-rate-limit')
 const User = require("../models/userModel");
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, 
+  max: 5, 
+  message: "Too many login attempts, please try again later",
+});
 
 const protect = asyncHandler(async (req, res, next) => {
   let token;
@@ -114,4 +120,4 @@ const logger = asyncHandler(async (req, res, next) => {
   next();
 });
 
-module.exports = { protect, isAdmin, canHandleReservation, logger };
+module.exports = { protect, isAdmin, canHandleReservation, logger, limiter };
