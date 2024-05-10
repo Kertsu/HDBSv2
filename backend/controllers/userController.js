@@ -717,6 +717,7 @@ const firstChangePassword = asyncHandler(async (req, res) => {
 
   user.password = hashedPassword;
   user.passwordChangedAt = Date.now();
+  user.registeredDevice = req.headers['user-agent'];
 
   try {
     await user.save();
