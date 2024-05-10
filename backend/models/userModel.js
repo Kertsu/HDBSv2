@@ -52,6 +52,20 @@ const userSchema = mongoose.Schema(
     passwordChangedAt:{
       type: Date, 
       default: null
+    },
+    verification: {
+      code: {
+        type: String, 
+        default: null
+      },
+      expiresAt:{
+        type: Date, 
+        default: null
+      }
+    },
+    registeredDevice:{
+      type: String, 
+      default: null,
     }
   },
   { timestamps: true }
