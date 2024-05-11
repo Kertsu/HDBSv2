@@ -136,7 +136,7 @@ const authenticate = asyncHandler(async (req, res) => {
 
       return res
        .status(200)
-       .json({ success: true, user: userData, OTP: true });
+       .json({ success: true, OTP: true });
     }
 
     createAuditTrail(req, {
