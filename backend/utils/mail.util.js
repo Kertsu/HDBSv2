@@ -190,7 +190,49 @@ const sendPasswordResetSuccess = async (user,req, res) => {
 };
 
 const sendOTP = async (data, req, res) => {
- 
+  const verificationCode = Math.floor(10000 + Math.random() * 9000).toString();
+  let { mailGenerator } = setupTransporterAndMailGen();
+  const {name, email} = data
+  var emailMessage = {
+    body: {
+      name,
+      intro: `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">Our system have detected that you want to sign in from another device. This verification code will expire in 10 minutes. Please use this to verify your identity:</p> 
+      
+      <div style="padding:.5rem 1.5rem; color: #24292e; border-radius: 6px; border:1px #cccccc solid; margin-bottom: 1rem !important; display: flex !important; align-items: center; width: max-content; justify-content:space-between;"><h3 style="margin: 0 !important;">${verificationCode}</h3>
+      </div>
+      `,
+      outro: `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">If you did not initiate initiate this request, please change your password immediately.</p>`,
+    },
+  };
+
+  console.log(data)
+
+  let mail = mailGenerator.generate(emailMessage);
+
+  let message = {
+    from: process.env.nmEMAIL,
+    to: email,
+    subject: "[DeskSync] Verification Code",
+    html: mail,
+  };
+
+    try {
+    await sendEmail(message);
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedVerificationCode = await bcrypt.hash(verificationCode, salt);
+
+    await User.findOneAndUpdate(
+      { email: data.email },
+      { verification: {
+        code: hashedVerificationCode,
+        expiresAt: Date.now() + 10 * 60 * 1000,
+      } }
+    );
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "An error occurred." });
+  }
 }
 
 //
@@ -300,4 +342,5 @@ module.exports = {
   sendCredentials,
   sendMagicLink,
   sendPasswordResetSuccess,
+  sendOTP
 };

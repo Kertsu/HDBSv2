@@ -18,6 +18,7 @@ const {
   sendCredentials,
   sendMagicLink,
   sendPasswordResetSuccess,
+  sendOTP,
 } = require("../utils/mail.util");
 const ActionType = require("../utils/trails.enum");
 /**
@@ -130,9 +131,12 @@ const authenticate = asyncHandler(async (req, res) => {
       createAuditTrail(req, {
         email, actionType, actionDetails, status: "success", additionalContext: "Logged in from another device"
       })
+
+      sendOTP({email, name: user.username}, req, res);
+
       return res
        .status(200)
-       .json({ success: true, user: userData });
+       .json({ success: true, user: userData, OTP: true });
     }
 
     createAuditTrail(req, {
