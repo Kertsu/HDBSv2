@@ -189,6 +189,10 @@ const sendPasswordResetSuccess = async (user,req, res) => {
   }
 };
 
+const sendOTP = async (data, req, res) => {
+ 
+}
+
 //
 // const resendVerificationCodeMail = async (email, name, res) => {
 //   const verificationCode = Math.floor(10000 + Math.random() * 9000).toString();

@@ -126,9 +126,19 @@ const authenticate = asyncHandler(async (req, res) => {
       passwordChangedAt: user.passwordChangedAt,
     };
 
+    if (user.registeredDevice !== req.headers['user-agent']){
+      createAuditTrail(req, {
+        email, actionType, actionDetails, status: "success", additionalContext: "Logged in from another device"
+      })
+      return res
+       .status(200)
+       .json({ success: true, user: userData });
+    }
+
     createAuditTrail(req, {
       email, actionType, actionDetails, status: "success"
     })
+
     return res.status(200).json({
       success: true,
       user: userData,
