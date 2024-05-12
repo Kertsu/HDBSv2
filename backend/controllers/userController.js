@@ -148,7 +148,7 @@ const authenticate = asyncHandler(async (req, res) => {
 
     const [deviceToken, hashedDeviceToken] = await generateDeviceToken();
 
-    console.log((await bcrypt.compare(desksyncv2DeviceToken, user.registeredDeviceToken)), 'LN151')
+    // console.log((await bcrypt.compare(desksyncv2DeviceToken, user.registeredDeviceToken)), 'LN151')
     if (!desksyncv2DeviceToken) {
       createAuditTrail(req, {
         email,
@@ -157,6 +157,9 @@ const authenticate = asyncHandler(async (req, res) => {
         status: "success",
         additionalContext: "Login attempt from a new device",
       });
+
+      user.otpRequired = true;
+      await user.save()
 
       sendOTP({ email, name: user.username }, req, res);
 
@@ -180,6 +183,9 @@ const authenticate = asyncHandler(async (req, res) => {
         additionalContext: "Login attempt from another device",
       });
 
+      user.otpRequired = true;
+      await user.save()
+
       sendOTP({ email, name: user.username }, req, res);
 
       return res.status(200).json({
@@ -195,6 +201,9 @@ const authenticate = asyncHandler(async (req, res) => {
       actionDetails,
       status: "success",
     });
+    
+    user.otpRequired = false;
+    await user.save()
 
     return res.status(200).json({
       success: true,
@@ -217,7 +226,7 @@ const authenticate = asyncHandler(async (req, res) => {
  * Get self
  */
 const getSelf = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user.id).select("-password");
+  const user = await User.findById(req.user.id).select("-password -verification");
 
   res.status(200).json({
     success: true,

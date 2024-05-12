@@ -66,6 +66,10 @@ const userSchema = mongoose.Schema(
     registeredDeviceToken:{
       type: String, 
       default: null,
+    },
+    otpRequired:{
+      type: Boolean,
+      default: false
     }
   },
   { timestamps: true }
