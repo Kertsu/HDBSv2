@@ -159,7 +159,7 @@ const authenticate = asyncHandler(async (req, res) => {
       });
 
       user.otpRequired = true;
-      await user.save()
+      await user.save();
 
       sendOTP({ email, name: user.username }, req, res);
 
@@ -167,12 +167,13 @@ const authenticate = asyncHandler(async (req, res) => {
         success: true,
         user: userData,
         OTP: true,
-        deviceToken
+        deviceToken,
       });
     }
 
     if (
-      user.registeredDeviceToken && desksyncv2DeviceToken &&
+      user.registeredDeviceToken &&
+      desksyncv2DeviceToken &&
       !(await bcrypt.compare(desksyncv2DeviceToken, user.registeredDeviceToken))
     ) {
       createAuditTrail(req, {
@@ -184,7 +185,7 @@ const authenticate = asyncHandler(async (req, res) => {
       });
 
       user.otpRequired = true;
-      await user.save()
+      await user.save();
 
       sendOTP({ email, name: user.username }, req, res);
 
@@ -201,9 +202,9 @@ const authenticate = asyncHandler(async (req, res) => {
       actionDetails,
       status: "success",
     });
-    
+
     user.otpRequired = false;
-    await user.save()
+    await user.save();
 
     return res.status(200).json({
       success: true,
@@ -226,7 +227,9 @@ const authenticate = asyncHandler(async (req, res) => {
  * Get self
  */
 const getSelf = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user.id).select("-password -verification");
+  const user = await User.findById(req.user.id).select(
+    "-password -verification"
+  );
 
   res.status(200).json({
     success: true,
@@ -1204,7 +1207,7 @@ const resetPassword = asyncHandler(async (req, res) => {
 /**
  * Validate the reset token
  */
-const validateResetToken = async (req, res) => {
+const validateResetToken = asyncHandler(async (req, res) => {
   const { token, id } = req.params;
 
   try {
@@ -1231,7 +1234,60 @@ const validateResetToken = async (req, res) => {
         "It appears that the password reset link you clicked on is invalid. Please try again.",
     });
   }
-};
+});
+
+/**
+ * Validate verification code
+ */
+const validateOTP = asyncHandler(async (req, res) => {
+  const { otp } = req.body;
+  const user = await User.findById(req.user.id);
+
+  const actionType = ActionType.LOGIN;
+  const actionDetails = `verify OTP`;
+  let error;
+
+  if (!user) {
+    return res.status(400).json({
+      success: false,
+      error: "User not found",
+    });
+  }
+
+  const otpValid = user.verification && 
+    (await bcrypt.compare(otp, user.verification.code)) &&
+    user.verification.expiresAt > Date.now();
+  if (!otpValid) {
+    error = "You seem to have entered an invalid verification code";
+    createAuditTrail(req, {
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: "Invalid OTP",
+    });
+    return res.status(400).json({
+      success: false,
+      error,
+    });
+  }
+
+  user.verification = null;
+  await user.save();
+
+
+  const message = "Verification successful"
+  createAuditTrail(req, {
+    actionType,
+    actionDetails,
+    status: "success",
+    additionalContext: message,
+  });
+
+  return res.status(200).json({
+    success: true,
+    message,
+  });
+});
 
 module.exports = {
   register,
@@ -1251,4 +1307,5 @@ module.exports = {
   forgotPassword,
   resetPassword,
   validateResetToken,
+  validateOTP,
 };

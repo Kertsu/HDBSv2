@@ -190,7 +190,7 @@ const sendPasswordResetSuccess = async (user,req, res) => {
 };
 
 const sendOTP = async (data, req, res) => {
-  const verificationCode = Math.floor(10000 + Math.random() * 9000).toString();
+  const verificationCode = Math.floor(1000000 + Math.random() * 9000).toString();
   let { mailGenerator } = setupTransporterAndMailGen();
   const {name, email} = data
   var emailMessage = {

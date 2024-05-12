@@ -16,6 +16,7 @@ const {
   forgotPassword,
   resetPassword,
   validateResetToken,
+  validateOTP,
 } = require("../controllers/userController");
 const { protect, isAdmin, canHandleReservation, limiter } = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/multer");
@@ -89,5 +90,8 @@ router.post("/forgot-password", forgotPassword);
 
 // Check if the token is valid
 router.get("/reset-password/validate/:token/:id", validateResetToken);
+
+// Check if OTP is valid
+router.post('/otp/validate', protect, validateOTP)
 
 module.exports = router;
