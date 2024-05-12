@@ -2,6 +2,8 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const asyncHandler = require("express-async-handler");
 const AuditTrail = require("../models/auditTrailModel");
+const {v4} = require('uuid');
+const uuidv4 = v4
 
 const isValidEmail = (email) => {
   const emailRegex = /@(student\.laverdad\.edu\.ph|laverdad\.edu\.ph)$/i;
@@ -122,6 +124,13 @@ const createAuditTrail = asyncHandler(async (req, data) => {
   // console.log(io.emit('new-trail', auditTrail))
 });
 
+const generateDeviceToken = async () => {
+  const deviceToken = uuidv4()
+  const hashedDeviceToken = await hashPassword(deviceToken);
+
+  return [deviceToken, hashedDeviceToken]
+}
+
 module.exports = {
   isValidEmail,
   hashPassword,
@@ -130,5 +139,6 @@ module.exports = {
   bulkDelete,
   generatePassword,
   updateAreaProperty,
-  createAuditTrail
+  createAuditTrail,
+  generateDeviceToken
 };

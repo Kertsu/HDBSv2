@@ -7,7 +7,8 @@ const {
   hashPassword,
   isValidPassword,
   createAuditTrail,
-  isValidEmail
+  isValidEmail,
+  generateDeviceToken,
 } = require("../utils/helpers");
 
 const User = require("../models/userModel");
@@ -26,27 +27,33 @@ const ActionType = require("../utils/trails.enum");
  */
 const register = asyncHandler(async (req, res) => {
   const { email } = req.body;
-  let error 
-  const actionType = ActionType.REGISTRATION
+  let error;
+  const actionType = ActionType.REGISTRATION;
 
   if (!email) {
-    error = "Please fill in all mandatory fields"
+    error = "Please fill in all mandatory fields";
     createAuditTrail(req, {
-    actionType, actionDetails: `Registration attempt for ${email}`, status: "failed", additionalContext: "Invalid credentials"
-    })
+      actionType,
+      actionDetails: `Registration attempt for ${email}`,
+      status: "failed",
+      additionalContext: "Invalid credentials",
+    });
     return res.status(400).json({
       success: false,
-      error
+      error,
     });
   }
 
   const userExist = await User.findOne({ email });
 
   if (userExist) {
-    error = "User already exists"
+    error = "User already exists";
     createAuditTrail(req, {
-    actionType, actionDetails: `Registration attempt for ${email}`, status: "failed", additionalContext: error
-    })
+      actionType,
+      actionDetails: `Registration attempt for ${email}`,
+      status: "failed",
+      additionalContext: error,
+    });
     return res.status(400).json({
       success: false,
       error,
@@ -54,11 +61,14 @@ const register = asyncHandler(async (req, res) => {
   }
 
   if (!isValidEmail(email)) {
-    error = "Email not allowed"
+    error = "Email not allowed";
     createAuditTrail(req, {
-    actionType, actionDetails: `Registration attempt for ${email}`, status: "failed", additionalContext: error
-    })
-    return res.status(400).json({ success: false, error});
+      actionType,
+      actionDetails: `Registration attempt for ${email}`,
+      status: "failed",
+      additionalContext: error,
+    });
+    return res.status(400).json({ success: false, error });
   }
 
   // if (password.length < 10 || !isValidPassword(password)) {
@@ -74,7 +84,7 @@ const register = asyncHandler(async (req, res) => {
   try {
     sendCredentials(email, username, req, res);
   } catch (err) {
-    error = "Invalid user data"
+    error = "Invalid user data";
     res.status(400).json({
       success: false,
       error,
@@ -87,21 +97,23 @@ const register = asyncHandler(async (req, res) => {
  */
 const authenticate = asyncHandler(async (req, res) => {
   const { username, email, password } = req.body;
-  const actionType = ActionType.LOGIN
-  const actionDetails = `Login attempt for ${email || username}`
-  let error
+  const actionType = ActionType.LOGIN;
+  const actionDetails = `Login attempt for ${email || username}`;
+  let error;
 
   const userByEmail = await User.findOne({ email });
   const userByUsername = await User.findOne({ username });
 
   if (!userByEmail && !userByUsername) {
-    error = "Invalid credentials"
+    error = "Invalid credentials";
     createAuditTrail(req, {
-      email, actionType, actionDetails, status: "failed", additionalContext: error
-    })
-    return res
-      .status(400)
-      .json({ success: false, error });
+      email,
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: error,
+    });
+    return res.status(400).json({ success: false, error });
   }
 
   const user = userByEmail || userByUsername;
@@ -109,8 +121,12 @@ const authenticate = asyncHandler(async (req, res) => {
   if (await bcrypt.compare(password, user.password)) {
     if (user.isDisabled) {
       createAuditTrail(req, {
-        email, actionType, actionDetails, status: "failed", additionalContext: "Account is suspended"
-      })
+        email,
+        actionType,
+        actionDetails,
+        status: "failed",
+        additionalContext: "Account is suspended",
+      });
       return res
         .status(400)
         .json({ success: false, error: "Your account is suspended" });
@@ -127,31 +143,72 @@ const authenticate = asyncHandler(async (req, res) => {
       passwordChangedAt: user.passwordChangedAt,
     };
 
-    if (user.registeredDevice !== req.headers['user-agent']){
+    const desksyncv2DeviceToken = req.headers["desksyncv2-device-token"];
+    console.log(req.headers["desksyncv2-device-token"], "ln147");
+
+    const [deviceToken, hashedDeviceToken] = await generateDeviceToken();
+
+    console.log((await bcrypt.compare(desksyncv2DeviceToken, user.registeredDeviceToken)), 'LN151')
+    if (!desksyncv2DeviceToken) {
       createAuditTrail(req, {
-        email, actionType, actionDetails, status: "success", additionalContext: "Logged in from another device"
-      })
+        email,
+        actionType,
+        actionDetails,
+        status: "success",
+        additionalContext: "Login attempt from a new device",
+      });
 
-      sendOTP({email, name: user.username}, req, res);
+      sendOTP({ email, name: user.username }, req, res);
 
-      return res
-       .status(200)
-       .json({ success: true, OTP: true });
+      return res.status(200).json({
+        success: true,
+        user: userData,
+        OTP: true,
+        deviceToken
+      });
+    }
+
+    if (
+      user.registeredDeviceToken && desksyncv2DeviceToken &&
+      !(await bcrypt.compare(desksyncv2DeviceToken, user.registeredDeviceToken))
+    ) {
+      createAuditTrail(req, {
+        email,
+        actionType,
+        actionDetails,
+        status: "success",
+        additionalContext: "Login attempt from another device",
+      });
+
+      sendOTP({ email, name: user.username }, req, res);
+
+      return res.status(200).json({
+        success: true,
+        user: userData,
+        OTP: true,
+      });
     }
 
     createAuditTrail(req, {
-      email, actionType, actionDetails, status: "success"
-    })
+      email,
+      actionType,
+      actionDetails,
+      status: "success",
+    });
 
     return res.status(200).json({
       success: true,
       user: userData,
     });
   } else {
-    error = "Invalid credentials"
+    error = "Invalid credentials";
     createAuditTrail(req, {
-      email, actionType, actionDetails, status: "failed", additionalContext: error
-    })
+      email,
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: error,
+    });
     return res.status(400).json({ success: false, error });
   }
 });
@@ -173,13 +230,16 @@ const getSelf = asyncHandler(async (req, res) => {
  */
 const deleteUser = asyncHandler(async (req, res) => {
   const userToDelete = await User.findById(req.params.id);
-  const actionType = ActionType.USER_MANAGEMENT
-  const actionDetails = `Delete user ${userToDelete.email}`
+  const actionType = ActionType.USER_MANAGEMENT;
+  const actionDetails = `Delete user ${userToDelete.email}`;
 
   if (!userToDelete) {
     createAuditTrail(req, {
-      actionType, actionDetails: "Deleting a user", status: "failed", additionalContext: "Trying to delete a user that doesn't exist"
-    })
+      actionType,
+      actionDetails: "Deleting a user",
+      status: "failed",
+      additionalContext: "Trying to delete a user that doesn't exist",
+    });
     return res.status(400).json({ success: false, error: "User not found" });
   }
 
@@ -187,15 +247,17 @@ const deleteUser = asyncHandler(async (req, res) => {
 
   if (userToDelete._id.equals(requestingUser._id)) {
     createAuditTrail(req, {
-      actionType, actionDetails, status: "failed", additionalContext: "Trying to delete own account"
-    })
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: "Trying to delete own account",
+    });
     return res
       .status(403)
       .json({ success: false, error: "You cannot delete your account." });
-    ;
   }
 
-  let deletedUser
+  let deletedUser;
 
   if (
     requestingUser.role === "admin" &&
@@ -204,23 +266,30 @@ const deleteUser = asyncHandler(async (req, res) => {
   ) {
     deletedUser = await User.findByIdAndDelete(req.params.id);
     createAuditTrail(req, {
-      actionType, actionDetails, status: "success"
-    })
+      actionType,
+      actionDetails,
+      status: "success",
+    });
     return res.status(200).json({ success: true, deletedUser });
   } else if (
     requestingUser.role === "superadmin" &&
     userToDelete.role !== "superadmin"
   ) {
     createAuditTrail(req, {
-      actionType, actionDetails, status: "success"
-    })
+      actionType,
+      actionDetails,
+      status: "success",
+    });
     deletedUser = await User.findByIdAndDelete(req.params.id);
     return res.status(200).json({ success: true, deletedUser });
   } else {
-    const error = "Permission denied"
+    const error = "Permission denied";
     createAuditTrail(req, {
-      actionType, actionDetails, status: "failed", additionalContext: error
-    })
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: error,
+    });
     return res.status(403).json({ success: false, error });
   }
 });
@@ -317,10 +386,9 @@ const updateSelf = asyncHandler(async (req, res) => {
   const { username, description } = req.body;
   const user = await User.findById(req.user.id).select("-password");
 
-  const actionType = ActionType.PROFILE_MANAGEMENT
-  const actionDetails = `Update profile`
-  let error
-
+  const actionType = ActionType.PROFILE_MANAGEMENT;
+  const actionDetails = `Update profile`;
+  let error;
 
   const defaultBanner =
     "https://res.cloudinary.com/drlztlr1m/image/upload/v1708332794/memuvo7apu0eqdt4f6mr.svg";
@@ -335,10 +403,13 @@ const updateSelf = asyncHandler(async (req, res) => {
   }
 
   if (username && !/^[a-zA-Z_]+$/.test(username)) {
-    error = "Invalid username"
+    error = "Invalid username";
     createAuditTrail(req, {
-      actionType, actionDetails, status: "failed", additionalContext: error
-    })
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: error,
+    });
     return res.status(400).json({
       success: false,
       error,
@@ -393,8 +464,10 @@ const updateSelf = asyncHandler(async (req, res) => {
 
   try {
     createAuditTrail(req, {
-      actionType, actionDetails, status: "success"
-    })
+      actionType,
+      actionDetails,
+      status: "success",
+    });
     await user.save();
     return res
       .status(200)
@@ -477,14 +550,17 @@ const updateUser = asyncHandler(async (req, res) => {
 
   const userToUpdate = await User.findById(req.params.id);
 
-  const actionType = ActionType.USER_MANAGEMENT
-  const actionDetails = `update ${userToUpdate.email}`
-  let error
+  const actionType = ActionType.USER_MANAGEMENT;
+  const actionDetails = `update ${userToUpdate.email}`;
+  let error;
 
   if (!userToUpdate) {
     createAuditTrail(req, {
-      actionType, actionDetails, status: "failed", additionalContext: "Trying to update a user that does not exist"
-    })
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: "Trying to update a user that does not exist",
+    });
     return res.status(400).json({ success: false, error: "User not found" });
   }
 
@@ -501,8 +577,11 @@ const updateUser = asyncHandler(async (req, res) => {
     await userToUpdate.save();
 
     createAuditTrail(req, {
-      actionType, actionDetails, status: "success", additionalContext: `${userToUpdate.email} updated`
-    })
+      actionType,
+      actionDetails,
+      status: "success",
+      additionalContext: `${userToUpdate.email} updated`,
+    });
 
     return res.status(200).json({ success: true, updatedUser: userToUpdate });
   } else if (
@@ -519,15 +598,21 @@ const updateUser = asyncHandler(async (req, res) => {
     await userToUpdate.save();
 
     createAuditTrail(req, {
-      actionType, actionDetails, status: "success", additionalContext: `${userToUpdate.email} updated`
-    })
+      actionType,
+      actionDetails,
+      status: "success",
+      additionalContext: `${userToUpdate.email} updated`,
+    });
 
     return res.status(200).json({ success: true, updatedUser: userToUpdate });
   } else {
-    error = "Permission denied"
+    error = "Permission denied";
     createAuditTrail(req, {
-      actionType, actionDetails, status: "success", additionalContext: error
-    })
+      actionType,
+      actionDetails,
+      status: "success",
+      additionalContext: error,
+    });
     return res.status(403).json({ success: false, error });
   }
 });
@@ -538,10 +623,9 @@ const updateUser = asyncHandler(async (req, res) => {
 const updatePassword = asyncHandler(async (req, res) => {
   const { currentPassword, newPassword, confirmPassword } = req.body;
   const user = await User.findById(req.user.id);
-  const actionType = ActionType.PROFILE_MANAGEMENT
-  const actionDetails = `change password`
-  let error
-  
+  const actionType = ActionType.PROFILE_MANAGEMENT;
+  const actionDetails = `change password`;
+  let error;
 
   if (!user) {
     return res.status(404).json({
@@ -560,10 +644,13 @@ const updatePassword = asyncHandler(async (req, res) => {
   );
 
   if (currentTime - passwordChangedAt < oneDay) {
-    error = `Change password in cooldown`
+    error = `Change password in cooldown`;
     createAuditTrail(req, {
-      actionType, actionDetails, status: "failed", additionalContext: error
-    })
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: error,
+    });
     return res.status(400).json({
       success: false,
       error: `${error}. ${cooldownRemaining} hours remaining`,
@@ -572,10 +659,13 @@ const updatePassword = asyncHandler(async (req, res) => {
 
   const isMatch = await bcrypt.compare(currentPassword, user.password);
   if (!isMatch) {
-    error = "Current password is incorrect"
+    error = "Current password is incorrect";
     createAuditTrail(req, {
-      actionType, actionDetails, status: "failed", additionalContext: error
-    })
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: error,
+    });
     return res.status(400).json({
       success: false,
       error,
@@ -583,10 +673,13 @@ const updatePassword = asyncHandler(async (req, res) => {
   }
 
   if (newPassword !== confirmPassword) {
-    error = "Passwords did not match"
+    error = "Passwords did not match";
     createAuditTrail(req, {
-      actionType, actionDetails, status: "failed", additionalContext: error
-    })
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: error,
+    });
     return res.status(400).json({
       success: false,
       error,
@@ -594,13 +687,17 @@ const updatePassword = asyncHandler(async (req, res) => {
   }
 
   if (!isValidPassword(newPassword)) {
-    error = "Invalid password. It should be at least 10 characters long and contain a mix of alphanumeric characters, lowercase, uppercase, and symbols"
+    error =
+      "Invalid password. It should be at least 10 characters long and contain a mix of alphanumeric characters, lowercase, uppercase, and symbols";
     createAuditTrail(req, {
-      actionType, actionDetails, status: "failed", additionalContext: error
-    })
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: error,
+    });
     return res.status(400).json({
       success: false,
-      error
+      error,
     });
   }
 
@@ -611,13 +708,14 @@ const updatePassword = asyncHandler(async (req, res) => {
 
   try {
     await user.save();
-    const message = "Password updated successfully"
+    const message = "Password updated successfully";
     createAuditTrail(req, {
-      actionType, actionDetails, status: "success", additionalContext: message
-    })
-    return res
-      .status(200)
-      .json({ success: true, message });
+      actionType,
+      actionDetails,
+      status: "success",
+      additionalContext: message,
+    });
+    return res.status(200).json({ success: true, message });
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -630,7 +728,7 @@ const updatePassword = asyncHandler(async (req, res) => {
  * Update email preference
  */
 const updateNotificationSettings = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user.id).select('-password');
+  const user = await User.findById(req.user.id).select("-password");
 
   const { receivingEmail } = req.body;
 
@@ -648,7 +746,7 @@ const updateNotificationSettings = asyncHandler(async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Email preferences updated successfully",
-      user
+      user,
     });
   } catch (error) {
     return res.status(500).json({
@@ -684,9 +782,9 @@ const firstChangePassword = asyncHandler(async (req, res) => {
   const { password, confirmPassword } = req.body;
   const user = await User.findById(req.user.id);
 
-  const actionType = ActionType.PROFILE_MANAGEMENT
-  const actionDetails = `change password`
-  let error
+  const actionType = ActionType.PROFILE_MANAGEMENT;
+  const actionDetails = `change password`;
+  let error;
 
   if (!user) {
     return res.status(404).json({
@@ -697,8 +795,11 @@ const firstChangePassword = asyncHandler(async (req, res) => {
 
   if (user.passwordChangedAt !== null) {
     createAuditTrail(req, {
-      actionType, actionDetails, status: "failed", additionalContext: "Password already changed"
-    })
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: "Password already changed",
+    });
     return res.status(400).json({
       success: false,
       error: "Invalid action",
@@ -706,10 +807,13 @@ const firstChangePassword = asyncHandler(async (req, res) => {
   }
 
   if (password !== confirmPassword) {
-    error = "Passwords did not match"
+    error = "Passwords did not match";
     createAuditTrail(req, {
-      actionType, actionDetails, status: "failed", additionalContext: error
-    })
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: error,
+    });
     return res.status(400).json({
       success: false,
       error,
@@ -717,10 +821,14 @@ const firstChangePassword = asyncHandler(async (req, res) => {
   }
 
   if (!isValidPassword(password)) {
-    error = "Password should be at least 10 characters long and include letters, numbers, and symbols."
+    error =
+      "Password should be at least 10 characters long and include letters, numbers, and symbols.";
     createAuditTrail(req, {
-      actionType, actionDetails, status: "failed", additionalContext: error
-    })
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: error,
+    });
     return res.status(400).json({
       success: false,
       error,
@@ -729,19 +837,22 @@ const firstChangePassword = asyncHandler(async (req, res) => {
 
   const hashedPassword = await hashPassword(password);
 
+  const [deviceToken, hashedDeviceToken] = await generateDeviceToken();
+
   user.password = hashedPassword;
   user.passwordChangedAt = Date.now();
-  user.registeredDevice = req.headers['user-agent'];
+  user.registeredDeviceToken = hashedDeviceToken;
 
   try {
     await user.save();
-    const message = "Password updated successfully"
+    const message = "Password updated successfully";
     createAuditTrail(req, {
-      actionType, actionDetails, status: "success", additionalContext: message
-    })
-    return res
-      .status(200)
-      .json({ success: true, message });
+      actionType,
+      actionDetails,
+      status: "success",
+      additionalContext: message,
+    });
+    return res.status(200).json({ success: true, message, deviceToken });
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -758,9 +869,9 @@ const handleUser = asyncHandler(async (req, res) => {
   const userToUpdate = await User.findById(id);
   const requestingUser = await User.findById(req.user.id);
 
-  const actionType = ActionType.USER_MANAGEMENT
-  const actionDetails = `${action} ${userToUpdate.email}`
-  let error
+  const actionType = ActionType.USER_MANAGEMENT;
+  const actionDetails = `${action} ${userToUpdate.email}`;
+  let error;
 
   if (!userToUpdate) {
     return res.status(400).json({ success: false, error: "User not found" });
@@ -768,8 +879,11 @@ const handleUser = asyncHandler(async (req, res) => {
 
   if (userToUpdate.id === requestingUser.id) {
     createAuditTrail(req, {
-      actionType, actionDetails, status: "failed", additionalContext: `${userToUpdate.email} ${action}d`
-    })
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: `${userToUpdate.email} ${action}d`,
+    });
     return res.status(400).json({
       success: false,
       error: "Invalid action: Cannot perform action on self",
@@ -784,8 +898,11 @@ const handleUser = asyncHandler(async (req, res) => {
   if (isSuperAdmin) {
     if (userToUpdate.role === "superadmin") {
       createAuditTrail(req, {
-        actionType, actionDetails, status: "failed", additionalContext: `Trying to update another superadmin`
-      })
+        actionType,
+        actionDetails,
+        status: "failed",
+        additionalContext: `Trying to update another superadmin`,
+      });
       return res.status(403).json({
         success: false,
         error: "Permission denied: Cannot perform action on other superadmins",
@@ -799,17 +916,23 @@ const handleUser = asyncHandler(async (req, res) => {
           { new: true }
         ).select("-password");
         createAuditTrail(req, {
-          actionType, actionDetails, status: "success", additionalContext: `${userToUpdate.email} is now disabled`
-        })
+          actionType,
+          actionDetails,
+          status: "success",
+          additionalContext: `${userToUpdate.email} is now disabled`,
+        });
         return res.status(200).json({
           success: true,
           message: `${updatedUser.username} is now disabled`,
         });
       } else {
-        error = "Invalid action: User is already disabled"
+        error = "Invalid action: User is already disabled";
         createAuditTrail(req, {
-          actionType, actionDetails, status: "failed", additionalContext: error
-        })
+          actionType,
+          actionDetails,
+          status: "failed",
+          additionalContext: error,
+        });
         return res.status(400).json({
           success: false,
           error,
@@ -823,34 +946,46 @@ const handleUser = asyncHandler(async (req, res) => {
           { new: true }
         ).select("-password");
         createAuditTrail(req, {
-          actionType, actionDetails, status: "success", additionalContext: `${userToUpdate.email} is now enabled`
-        })
+          actionType,
+          actionDetails,
+          status: "success",
+          additionalContext: `${userToUpdate.email} is now enabled`,
+        });
         return res.status(200).json({
           success: true,
           message: `${updatedUser.username} is now enabled`,
         });
       } else {
-        error = "Invalid action: User is already enabled"
+        error = "Invalid action: User is already enabled";
         createAuditTrail(req, {
-          actionType, actionDetails, status: "failed", additionalContext: error
-        })
+          actionType,
+          actionDetails,
+          status: "failed",
+          additionalContext: error,
+        });
         return res.status(400).json({
           success: false,
           error,
         });
       }
     } else {
-      error = "Invalid action"
+      error = "Invalid action";
       createAuditTrail(req, {
-        actionType, actionDetails, status: "failed", additionalContext: error
-      })
+        actionType,
+        actionDetails,
+        status: "failed",
+        additionalContext: error,
+      });
       return res.status(400).json({ success: false, error });
     }
   } else if (isAdmin) {
     if (userToUpdate.role === "superadmin" || userToUpdate.role === "admin") {
       createAuditTrail(req, {
-        actionType, actionDetails, status: "failed", additionalContext: `Trying to update another admin`
-      })
+        actionType,
+        actionDetails,
+        status: "failed",
+        additionalContext: `Trying to update another admin`,
+      });
       return res.status(403).json({
         success: false,
         error: "Permission denied: Cannot perform action on other admins",
@@ -863,8 +998,11 @@ const handleUser = asyncHandler(async (req, res) => {
         { new: true }
       ).select("-password");
       createAuditTrail(req, {
-        actionType, actionDetails, status: "success", additionalContext: `${userToUpdate.email} is now disabled`
-      })
+        actionType,
+        actionDetails,
+        status: "success",
+        additionalContext: `${userToUpdate.email} is now disabled`,
+      });
       return res.status(200).json({
         success: true,
         message: `${updatedUser.username} is now disabled`,
@@ -876,24 +1014,33 @@ const handleUser = asyncHandler(async (req, res) => {
         { new: true }
       ).select("-password");
       createAuditTrail(req, {
-        actionType, actionDetails, status: "success", additionalContext: `${userToUpdate.email} is now enabled`
-      })
+        actionType,
+        actionDetails,
+        status: "success",
+        additionalContext: `${userToUpdate.email} is now enabled`,
+      });
       return res.status(200).json({
         success: true,
         message: `${updatedUser.username} is now enabled`,
       });
     } else {
-      error = "Invalid action"
+      error = "Invalid action";
       createAuditTrail(req, {
-        actionType, actionDetails, status: "failed", additionalContext: error
-      })
-      return res.status(400).json({ success: false, error});
+        actionType,
+        actionDetails,
+        status: "failed",
+        additionalContext: error,
+      });
+      return res.status(400).json({ success: false, error });
     }
   } else {
-    error = "Permission denied"
+    error = "Permission denied";
     createAuditTrail(req, {
-      actionType, actionDetails, status: "failed", additionalContext: error
-    })
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: error,
+    });
     return res.status(403).json({ success: false, error });
   }
 });
@@ -917,7 +1064,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
   }
 
   try {
-    sendMagicLink(user,req, res);
+    sendMagicLink(user, req, res);
   } catch (error) {
     return res.status(400).json({
       success: false,
@@ -935,10 +1082,9 @@ const resetPassword = asyncHandler(async (req, res) => {
 
   const user = await User.findById(id);
 
-  const actionType = ActionType.PROFILE_MANAGEMENT
-  const actionDetails = `reset password`
-  let error
-
+  const actionType = ActionType.PROFILE_MANAGEMENT;
+  const actionDetails = `reset password`;
+  let error;
 
   if (!user) {
     return res.status(400).json({
@@ -952,10 +1098,13 @@ const resetPassword = asyncHandler(async (req, res) => {
   const tokenExpired = passwordResetToken.expiresAt < Date.now();
 
   if (!tokenValid) {
-    error = "Invalid reset token"
+    error = "Invalid reset token";
     createAuditTrail(req, {
-      actionType, actionDetails, status: "failed", additionalContext: error
-    })
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: error,
+    });
     return res.status(400).json({
       success: false,
       error,
@@ -963,10 +1112,13 @@ const resetPassword = asyncHandler(async (req, res) => {
   }
 
   if (tokenExpired) {
-    error = "Reset token expired"
+    error = "Reset token expired";
     createAuditTrail(req, {
-      actionType, actionDetails, status: "failed", additionalContext: error
-    })
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: error,
+    });
     return res.status(400).json({
       success: false,
       error,
@@ -974,10 +1126,13 @@ const resetPassword = asyncHandler(async (req, res) => {
   }
 
   if (password !== confirmPassword) {
-    error = "Passwords did not match"
+    error = "Passwords did not match";
     createAuditTrail(req, {
-      actionType, actionDetails, status: "failed", additionalContext: error
-    })
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: error,
+    });
     return res.status(400).json({
       success: false,
       error,
@@ -992,10 +1147,13 @@ const resetPassword = asyncHandler(async (req, res) => {
   );
 
   if (currentTime - passwordChangedAt < oneDay) {
-    error = `Change password in cooldown`
+    error = `Change password in cooldown`;
     createAuditTrail(req, {
-      actionType, actionDetails, status: "failed", additionalContext: error
-    })
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: error,
+    });
     return res.status(400).json({
       success: false,
       error: `${error}. ${cooldownRemaining} hours remaining.`,
@@ -1003,10 +1161,14 @@ const resetPassword = asyncHandler(async (req, res) => {
   }
 
   if (!isValidPassword(password)) {
-    error = "Password should be at least 10 characters long and include letters, numbers, and symbols."
+    error =
+      "Password should be at least 10 characters long and include letters, numbers, and symbols.";
     createAuditTrail(req, {
-      actionType, actionDetails, status: "failed", additionalContext: error
-    })
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: error,
+    });
     return res.status(400).json({
       success: false,
       error:
@@ -1021,7 +1183,7 @@ const resetPassword = asyncHandler(async (req, res) => {
   user.passwordResetToken = undefined;
 
   try {
-    sendPasswordResetSuccess(user,req, res);
+    sendPasswordResetSuccess(user, req, res);
   } catch (error) {
     return res.status(400).json({
       success: false,

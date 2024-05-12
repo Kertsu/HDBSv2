@@ -63,7 +63,7 @@ const userSchema = mongoose.Schema(
         default: null
       }
     },
-    registeredDevice:{
+    registeredDeviceToken:{
       type: String, 
       default: null,
     }
