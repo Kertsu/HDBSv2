@@ -149,7 +149,7 @@ const authenticate = asyncHandler(async (req, res) => {
     const [deviceToken, hashedDeviceToken] = await generateDeviceToken();
 
     // console.log((await bcrypt.compare(desksyncv2DeviceToken, user.registeredDeviceToken)), 'LN151')
-    if (!desksyncv2DeviceToken) {
+    if (!desksyncv2DeviceToken && user.registeredDeviceToken) {
       createAuditTrail(req, {
         email,
         actionType,
@@ -1272,6 +1272,7 @@ const validateOTP = asyncHandler(async (req, res) => {
   }
 
   user.verification = null;
+  user.otpRequired = false;
   await user.save();
 
 
@@ -1288,6 +1289,37 @@ const validateOTP = asyncHandler(async (req, res) => {
     message,
   });
 });
+
+/**
+ * Resend OTP
+ */
+const resendOTP = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user.id);
+
+  const actionType = ActionType.LOGIN;
+  const actionDetails = `resend OTP`;
+
+  if (!user) {
+    return res.status(400).json({
+      success: false,
+      error: "User not found",
+    });
+  }
+
+  sendOTP({ email: user.email, name: user.username }, req, res);
+
+  createAuditTrail(req, {
+    actionType,
+    actionDetails,
+    status: "success",
+    additionalContext: `OTP sent successfully to ${user.email}`,
+  });
+  
+  return res.status(200).json({
+    success: true,
+    message: " OTP has been sent successfully. Please check your email for the code.",
+  })
+})
 
 module.exports = {
   register,
@@ -1308,4 +1340,5 @@ module.exports = {
   resetPassword,
   validateResetToken,
   validateOTP,
+  resendOTP
 };
