@@ -35,6 +35,7 @@ const sendEmail = async (message) => {
   try {
     let { transporter } = setupTransporterAndMailGen();
     await transporter.sendMail(message);
+    console.log('sent')
   } catch (error) {
     throw new Error("Error sending email: " + error);
   }
