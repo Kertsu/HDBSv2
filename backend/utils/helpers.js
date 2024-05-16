@@ -16,7 +16,7 @@ const hashPassword = async (password) => {
 };
 
 const isValidPassword = (password) => {
-  return /^(?=.*\d)(?=.*[a-zA-Z])(?=.*[!@#$%^&*])/.test(password);
+  return /^(?=.*\d)(?=.*[a-zA-Z])(?=.*[!@#$%^&*]).{15,}/.test(password);
 };
 
 const generateToken = (id) => {
@@ -101,6 +101,12 @@ const createAuditTrail = asyncHandler(async (req, data) => {
     req.remoteAddress ||
     req.socket.remoteAddress ||
     null;
+    console.log('ip', req.ip)
+    console.log('x-forwarded-for', req.headers["x-forwarded-for"])
+    console.log('remoteAddress', req.remoteAddress)
+    console.log('socket.remoteAddress', req.socket.remoteAddress)
+    console.log('ipAddress', ipAddress)
+    
   const userId = req.user?._id;
 
   const { email, actionType, actionDetails, status, additionalContext } = data;

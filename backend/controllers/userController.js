@@ -700,7 +700,7 @@ const updatePassword = asyncHandler(async (req, res) => {
 
   if (!isValidPassword(newPassword)) {
     error =
-      "Invalid password. It should be at least 10 characters long and contain a mix of alphanumeric characters, lowercase, uppercase, and symbols";
+      "Password should be at least 15 characters long and contain a mix of alphanumeric characters, lowercase, uppercase, and symbols";
     createAuditTrail(req, {
       actionType,
       actionDetails,
