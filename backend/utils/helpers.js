@@ -2,8 +2,8 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const asyncHandler = require("express-async-handler");
 const AuditTrail = require("../models/auditTrailModel");
-const {v4} = require('uuid');
-const uuidv4 = v4
+const { v4 } = require("uuid");
+const uuidv4 = v4;
 
 const isValidEmail = (email) => {
   const emailRegex = /@(student\.laverdad\.edu\.ph|laverdad\.edu\.ph)$/i;
@@ -95,18 +95,13 @@ const updateAreaProperty = asyncHandler(async () => {
 
 const createAuditTrail = asyncHandler(async (req, data) => {
   const ipAddress =
-    req.ip ||
     req.headers["x-forwarded-for"] ||
+    req.ip ||
     req.headers["true-client-ip"] ||
     req.remoteAddress ||
     req.socket.remoteAddress ||
     null;
-    console.log('ip', req.ip)
-    console.log('x-forwarded-for', req.headers["x-forwarded-for"])
-    console.log('remoteAddress', req.remoteAddress)
-    console.log('socket.remoteAddress', req.socket.remoteAddress)
-    console.log('ipAddress', ipAddress)
-    
+
   const userId = req.user?._id;
 
   const { email, actionType, actionDetails, status, additionalContext } = data;
@@ -131,11 +126,11 @@ const createAuditTrail = asyncHandler(async (req, data) => {
 });
 
 const generateDeviceToken = async () => {
-  const deviceToken = uuidv4()
+  const deviceToken = uuidv4();
   const hashedDeviceToken = await hashPassword(deviceToken);
 
-  return [deviceToken, hashedDeviceToken]
-}
+  return [deviceToken, hashedDeviceToken];
+};
 
 module.exports = {
   isValidEmail,
@@ -146,5 +141,5 @@ module.exports = {
   generatePassword,
   updateAreaProperty,
   createAuditTrail,
-  generateDeviceToken
+  generateDeviceToken,
 };
