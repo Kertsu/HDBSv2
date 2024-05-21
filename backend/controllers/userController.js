@@ -651,23 +651,23 @@ const updatePassword = asyncHandler(async (req, res) => {
   const passwordChangedAt = new Date(user.passwordChangedAt).getTime();
   const currentTime = new Date().getTime();
 
-  const cooldownRemaining = Math.ceil(
-    (passwordChangedAt + oneDay - currentTime) / (60 * 60 * 1000)
-  );
+  // const cooldownRemaining = Math.ceil(
+  //   (passwordChangedAt + oneDay - currentTime) / (60 * 60 * 1000)
+  // );
 
-  if (currentTime - passwordChangedAt < oneDay) {
-    error = `Change password in cooldown`;
-    createAuditTrail(req, {
-      actionType,
-      actionDetails,
-      status: "failed",
-      additionalContext: error,
-    });
-    return res.status(400).json({
-      success: false,
-      error: `${error}. ${cooldownRemaining} hours remaining`,
-    });
-  }
+  // if (currentTime - passwordChangedAt < oneDay) {
+  //   error = `Change password in cooldown`;
+  //   createAuditTrail(req, {
+  //     actionType,
+  //     actionDetails,
+  //     status: "failed",
+  //     additionalContext: error,
+  //   });
+  //   return res.status(400).json({
+  //     success: false,
+  //     error: `${error}. ${cooldownRemaining} hours remaining`,
+  //   });
+  // }
 
   const isMatch = await bcrypt.compare(currentPassword, user.password);
   if (!isMatch) {
@@ -1151,26 +1151,26 @@ const resetPassword = asyncHandler(async (req, res) => {
     });
   }
 
-  const oneDay = 24 * 60 * 60 * 1000;
-  const passwordChangedAt = new Date(user.passwordChangedAt).getTime();
-  const currentTime = new Date().getTime();
-  const cooldownRemaining = Math.ceil(
-    (passwordChangedAt + oneDay - currentTime) / (60 * 60 * 1000)
-  );
+  // const oneDay = 24 * 60 * 60 * 1000;
+  // const passwordChangedAt = new Date(user.passwordChangedAt).getTime();
+  // const currentTime = new Date().getTime();
+  // const cooldownRemaining = Math.ceil(
+  //   (passwordChangedAt + oneDay - currentTime) / (60 * 60 * 1000)
+  // );
 
-  if (currentTime - passwordChangedAt < oneDay) {
-    error = `Change password in cooldown`;
-    createAuditTrail(req, {
-      actionType,
-      actionDetails,
-      status: "failed",
-      additionalContext: error,
-    });
-    return res.status(400).json({
-      success: false,
-      error: `${error}. ${cooldownRemaining} hours remaining.`,
-    });
-  }
+  // if (currentTime - passwordChangedAt < oneDay) {
+  //   error = `Change password in cooldown`;
+  //   createAuditTrail(req, {
+  //     actionType,
+  //     actionDetails,
+  //     status: "failed",
+  //     additionalContext: error,
+  //   });
+  //   return res.status(400).json({
+  //     success: false,
+  //     error: `${error}. ${cooldownRemaining} hours remaining.`,
+  //   });
+  // }
 
   if (!isValidPassword(password)) {
     error =
