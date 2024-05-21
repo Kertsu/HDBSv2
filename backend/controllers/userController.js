@@ -1174,7 +1174,7 @@ const resetPassword = asyncHandler(async (req, res) => {
 
   if (!isValidPassword(password)) {
     error =
-      "Password should be at least 10 characters long and include letters, numbers, and symbols.";
+      "Password should be at least 15 characters long and contain a mix of alphanumeric characters, lowercase, uppercase, and symbols.";
     createAuditTrail(req, {
       actionType,
       actionDetails,
