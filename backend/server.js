@@ -7,6 +7,7 @@ const { urlencoded } = require("body-parser");
 const connectDB = require("./config/db");
 const cors = require("cors");
 const { attachSocketMiddleware } = require("./middlewares/socketMiddleware");
+const { midnightReservationCleanupJob, changeToStartedJob, expiredReservationHandlerJob, unapprovedReservationsCleanUpJob } = require("./utils/reservationHandler");
 
 connectDB();
 
@@ -28,6 +29,11 @@ app.use(
     },
   })
 );
+
+midnightReservationCleanupJob.start()
+changeToStartedJob.start()
+expiredReservationHandlerJob.start()
+unapprovedReservationsCleanUpJob.start()
 
 let connectedUsers = [];
 
