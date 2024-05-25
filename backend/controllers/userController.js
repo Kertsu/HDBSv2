@@ -71,14 +71,6 @@ const register = asyncHandler(async (req, res) => {
     return res.status(400).json({ success: false, error });
   }
 
-  // if (password.length < 10 || !isValidPassword(password)) {
-  //   return res.status(400).json({
-  //     success: false,
-  //     error:
-  //       "Invalid password. It should be at least 10 characters long and contain a mix of alphanumeric and special characters",
-  //   });
-  // }
-
   const username = email.split("@")[0];
 
   try {
@@ -834,7 +826,7 @@ const firstChangePassword = asyncHandler(async (req, res) => {
 
   if (!isValidPassword(password)) {
     error =
-      "Password should be at least 10 characters long and include letters, numbers, and symbols.";
+      "Password should be at least 15 characters long and include letters, numbers, and symbols.";
     createAuditTrail(req, {
       actionType,
       actionDetails,
@@ -1183,8 +1175,7 @@ const resetPassword = asyncHandler(async (req, res) => {
     });
     return res.status(400).json({
       success: false,
-      error:
-        "Password should be at least 10 characters long and include letters, numbers, and symbols.",
+      error,
     });
   }
 
