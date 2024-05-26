@@ -17,10 +17,10 @@ const FeedbackSchema = mongoose.Schema(
       min: 1,
       max: 5,
       enum: [1, 2, 3, 4, 5],
+      required: true,
     },
     description: {
       type: String,
-      required: true,
     },
   },
   { timestamps: true }

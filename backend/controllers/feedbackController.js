@@ -1,5 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const Feedback = require("../models/feedbackModel");
+const Hotdesk = require('../models/hotdeskModel');
 const queryHelper = require("../utils/queryHelper");
 
 const createFeedback = asyncHandler(async (req, res) => {
@@ -13,11 +14,11 @@ const createFeedback = asyncHandler(async (req, res) => {
 
   const desk = await Hotdesk.findOne({ deskNumber });
 
-  const feedback = Feedback.create({
+  const feedback = await Feedback.create({
     desk: desk.id || desk._id,
     rating,
-    description,
-    user: req.user,
+    description: description || null,
+    user: req.user._id,
   });
 
   return res.status(200).json({ success: true, feedback });
