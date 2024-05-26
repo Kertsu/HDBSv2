@@ -1,4 +1,4 @@
-const asyncHandler = require("asyncHandler");
+const asyncHandler = require("express-async-handler");
 const Feedback = require("../models/feedbackModel");
 const queryHelper = require("../utils/queryHelper");
 

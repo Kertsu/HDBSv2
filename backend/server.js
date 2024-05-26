@@ -63,6 +63,7 @@ app.use("/api/hotdesks", require("./routes/hotdeskRoutes"));
 app.use("/api/reservations", require("./routes/reservationRoutes"));
 app.use('/api/trails', require('./routes/auditTrailRoutes'))
 app.use('/api/switch', require('./routes/switchRoutes'))
+app.use('/api/feedbacks', require('./routes/feedbackRoutes'));
 
 const addNewUser = (
   { _id, username, email, role, avatar, banner, description },
