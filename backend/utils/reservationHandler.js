@@ -38,15 +38,13 @@ const changeToStartedJob = cron.schedule("* * * * *", async () => {
   );
 });
 
-const expiredReservationHandlerJob = cron.schedule("* * * * *", async () => {
+const expiredReservationHandlerJob = (io, getUser) => cron.schedule("* * * * *", async () => {
 
   const currentDate = new Date();
 
   const reservations = await Reservation.find({
     endTime: { $lte: roundToMillisecond(currentDate) },
   });
-  console.log(roundToMillisecond(currentDate))
-  console.log('expired reservations', reservations)
 
   try {
     for (const reservation of reservations) {
@@ -60,6 +58,19 @@ const expiredReservationHandlerJob = cron.schedule("* * * * *", async () => {
         type: "COMPLETED",
         mode: reservation.mode
       });
+
+      const userId = reservation.user.toString();
+      const user = getUser(userId);
+   
+      if (user){
+        io.to(user.socketId).emit('reservation-expired', {
+          reservationId: reservation.id,
+          userId: reservation.user,
+          deskNumber: reservation.deskNumber,
+          message: "Your reservation has ended."
+        })
+      }
+      
     }
   } catch (error) {
     console.log(error);

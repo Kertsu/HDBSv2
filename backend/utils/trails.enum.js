@@ -3,10 +3,11 @@ const ActionType = {
     REGISTRATION: 'registration',
     LOGIN: 'login',
     LOGOUT: 'logout',
+    FEEDBACK: 'feedback',
     RESERVATION: "reservation",
     USER_MANAGEMENT: 'user management',
     RESERVATION_MANAGEMENT: 'reservation management',
-    DESK_MANAGEMENT: 'desk management'
+    DESK_MANAGEMENT: 'desk management',
 }
 
 module.exports = ActionType;
