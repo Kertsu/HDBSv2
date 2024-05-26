@@ -30,10 +30,6 @@ app.use(
   })
 );
 
-midnightReservationCleanupJob.start()
-changeToStartedJob.start()
-expiredReservationHandlerJob.start()
-unapprovedReservationsCleanUpJob.start()
 
 let connectedUsers = [];
 
@@ -69,11 +65,11 @@ app.use('/api/trails', require('./routes/auditTrailRoutes'))
 app.use('/api/switch', require('./routes/switchRoutes'))
 
 const addNewUser = (
-  { id, username, email, role, avatar, banner, description },
+  { _id, username, email, role, avatar, banner, description },
   socketId
 ) => {
   const user = {
-    id,
+    id: _id,
     username,
     email,
     role,
@@ -93,8 +89,16 @@ const removeUser = (socketId) => {
 };
 
 const getUser = (id) => {
-  return connectedUsers.find((user) => user.id == id);
+  console.log('Searching for user with ID:', id);
+  const user = connectedUsers.find((user) => user.id == id);
+  console.log('Found user:', user);
+  return user
 };
+
+midnightReservationCleanupJob.start()
+changeToStartedJob.start()
+expiredReservationHandlerJob(io, getUser).start()
+unapprovedReservationsCleanUpJob.start()
 
 server.listen(port, () => {
   console.log(`Server is listening on port ${port}`);
