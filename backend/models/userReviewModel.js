@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const FeedbackSchema = mongoose.Schema(
+const UserReviewSchema = mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
@@ -17,18 +17,14 @@ const FeedbackSchema = mongoose.Schema(
       ref: "Reservation",
       required: true,
     },
-    rating: {
-      type: Number,
-      min: 1,
-      max: 5,
-      enum: [1, 2, 3, 4, 5],
-      required: true,
-    },
-    description: {
+    status: {
       type: String,
+      required: true,
+      enum: ["PENDING", "COMPLETED", "ARCHIVED"],
+      default: "PENDING",
     },
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Feedback", FeedbackSchema);
+module.exports = mongoose.model("UserReview", UserReviewSchema);

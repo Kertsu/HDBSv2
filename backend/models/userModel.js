@@ -70,6 +70,10 @@ const userSchema = mongoose.Schema(
     otpRequired:{
       type: Boolean,
       default: false
+    },
+    toRate:{
+      type: Number,
+      default: 0
     }
   },
   { timestamps: true }

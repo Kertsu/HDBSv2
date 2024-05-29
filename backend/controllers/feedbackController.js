@@ -13,15 +13,13 @@ const createFeedback = asyncHandler(async (req, res) => {
   let error;
 
   if (!deskNumber || !rating) {
-    error = "Missing required fields";
+    error = "Please rate before submitting feedback";
     createAuditTrail(req, {
       actionType,
       actionDetails,
       status: "failed",
       additionalContext: error,
     });
-    console.log(actionDetails, "det");
-    console.log(actionType, "type");
     return res.status(400).json({ success: false, error });
   }
 
