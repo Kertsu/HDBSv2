@@ -64,6 +64,7 @@ const expiredReservationHandlerJob = (io, getUser) =>
           deskNumber: reservation.deskNumber,
           reservation: reservation.id,
           mode: reservation.mode,
+          date: reservation.date,
         });
 
         await User.findOneAndUpdate(
