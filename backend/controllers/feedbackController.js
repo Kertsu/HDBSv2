@@ -6,6 +6,7 @@ const User = require("../models/userModel");
 const queryHelper = require("../utils/queryHelper");
 const ActionType = require("../utils/trails.enum");
 const { createAuditTrail } = require("../utils/helpers");
+const {Types} = require('mongoose')
 
 const createFeedback = asyncHandler(async (req, res) => {
   const { deskNumber, rating, description, reservation } = req.body;
@@ -42,10 +43,10 @@ const createFeedback = asyncHandler(async (req, res) => {
       reservation,
     });
 
-    await UserReview.findOneAndUpdate(
-      { user: user._id, deskNumber, reservation },
-      { status: "RATED" }
-    );
+    const review = await UserReview.findOne({ user: user._id, deskNumber, reservation: new Types.ObjectId(reservation) })
+
+    review.status = "RATED";
+    await review.save();
 
     await User.findOneAndUpdate({ _id: user._id }, { $inc: { toRate: -1 } });
 
