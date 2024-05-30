@@ -164,21 +164,20 @@ const abortReservation = asyncHandler(async (req, res) => {
 });
 
 const getSelfReservations = asyncHandler(async (req, res) => {
-  const userId = req.user.id;
-
+  if (!req.query.id){
+    return res
+     .status(400)
+     .json({ success: false, error: "Invalid request" });
+  }
   const reservations = await queryHelper(
     Reservation,
     req.query,
     "reservations"
   );
 
-  const filteredReservations = reservations.filter((reservation) => {
-    return reservation.user.toString() === userId && reservation.mode === 0;
-  });
-
   res.status(200).json({
     success: true,
-    reservations: filteredReservations,
+    reservations,
     totalDocuments: await Reservation.countDocuments({
       user: req.user.id,
       mode: 0,
@@ -388,20 +387,20 @@ const getHistory = asyncHandler(async (req, res) => {
 });
 
 const getSelfHistory = asyncHandler(async (req, res) => {
+  if (!req.query.id){
+    return res
+     .status(400)
+     .json({ success: false, error: "Invalid request" });
+  }
   const reservations = await queryHelper(
     ReservationHistory,
     req.query,
     "selfHistory"
   );
 
-  const filteredReservations = reservations.filter(
-    (reservation) =>
-      reservation.user.toString() === req.user.id && reservation.mode === 0
-  );
-
   return res.status(200).json({
     success: true,
-    reservations: filteredReservations,
+    reservations,
     totalDocuments: await ReservationHistory.countDocuments({
       user: req.user.id,
       mode: 0,
