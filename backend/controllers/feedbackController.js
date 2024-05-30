@@ -47,7 +47,7 @@ const createFeedback = asyncHandler(async (req, res) => {
       { status: "RATED" }
     );
 
-    await User.findOneAndUpdate({ user: user._id }, { $inc: { toRate: -1 } });
+    await User.findOneAndUpdate({ _id: user._id }, { $inc: { toRate: -1 } });
 
     createAuditTrail(req, {
       actionType,
