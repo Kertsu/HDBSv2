@@ -17,6 +17,10 @@ const FeedbackSchema = mongoose.Schema(
       ref: "Reservation",
       required: true,
     },
+    deskNumber: {
+      type: Number,
+      required: true,
+    },
     rating: {
       type: Number,
       min: 1,

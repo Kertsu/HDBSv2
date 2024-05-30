@@ -2,6 +2,7 @@ const asyncHandler = require("express-async-handler");
 const Reservation = require("../models/reservationModel");
 const User = require("../models/userModel");
 const Hotdesk = require("../models/hotdeskModel");
+const UserReview = require("../models/userReviewModel");
 const ReservationHistory = require("../models/reservationHistoryModel");
 const Switch = require("../models/switchModel");
 const queryHelper = require("../utils/queryHelper");
@@ -13,7 +14,7 @@ const dateOptions = {
   year: "numeric",
   month: "long",
   day: "numeric",
-}
+};
 
 const getReservations = asyncHandler(async (req, res) => {
   const reservations = await queryHelper(Reservation, req.query, "reservation");
@@ -214,15 +215,16 @@ const cancelReservation = asyncHandler(async (req, res) => {
     });
     await reservation.deleteOne();
 
-    const formattedDate = new Date(reservation.date).toLocaleDateString(undefined, dateOptions);
+    const formattedDate = new Date(reservation.date).toLocaleDateString(
+      undefined,
+      dateOptions
+    );
 
     createAuditTrail(req, {
       actionType,
       actionDetails,
       status: "success",
-      additionalContext: `Canceled their reservation on Hotdesk #${
-        reservation.deskNumber
-      } on ${formattedDate}`,
+      additionalContext: `Canceled their reservation on Hotdesk #${reservation.deskNumber} on ${formattedDate}`,
     });
     return res
       .status(200)
@@ -347,10 +349,16 @@ const reserve = asyncHandler(async (req, res) => {
         //     sendReservationApproved(req.user.email, req.user.name, deskNumber)
         //   }
 
-        const formattedDate = new Date(date).toLocaleDateString(undefined, dateOptions);
+        const formattedDate = new Date(date).toLocaleDateString(
+          undefined,
+          dateOptions
+        );
         createAuditTrail(req, {
-          actionType, actionDetails, status: "success", additionalContext: `Reserved for Hotdesk #${deskNumber} on ${formattedDate}`
-        })
+          actionType,
+          actionDetails,
+          status: "success",
+          additionalContext: `Reserved for Hotdesk #${deskNumber} on ${formattedDate}`,
+        });
         return res.status(201).json({ success: true, newReservation });
       } catch (error) {
         console.log("3grd");
@@ -401,6 +409,19 @@ const getSelfHistory = asyncHandler(async (req, res) => {
   });
 });
 
+const getSelfToRateReservations = asyncHandler(async (req, res) => {
+  const toRateReservations = await queryHelper(UserReview, req.query, "userReview");
+
+  return res.status(200).json({
+    success: true,
+    toRateReservations,
+    totalDocuments: await UserReview.countDocuments({
+      user: req.user.id,
+      mode: 0,
+    }),
+  });
+});
+
 module.exports = {
   getReservations,
   handleReservation,
@@ -410,4 +431,5 @@ module.exports = {
   reserve,
   getHistory,
   getSelfHistory,
+  getSelfToRateReservations
 };

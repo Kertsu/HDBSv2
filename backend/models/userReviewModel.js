@@ -7,9 +7,8 @@ const UserReviewSchema = mongoose.Schema(
       ref: "User",
       required: true,
     },
-    desk: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Desk",
+    deskNumber: {
+      type: Number,
       required: true,
     },
     reservation: {
@@ -20,8 +19,13 @@ const UserReviewSchema = mongoose.Schema(
     status: {
       type: String,
       required: true,
-      enum: ["PENDING", "COMPLETED", "ARCHIVED"],
+      enum: ["PENDING", "RATED", "ARCHIVED"],
       default: "PENDING",
+    },
+    mode: {
+      type: Number,
+      required: true,
+      enum: [0, 1],
     },
   },
   { timestamps: true }
