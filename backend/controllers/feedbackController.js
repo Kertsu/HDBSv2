@@ -1,12 +1,13 @@
 const asyncHandler = require("express-async-handler");
 const Feedback = require("../models/feedbackModel");
 const Hotdesk = require("../models/hotdeskModel");
+const UserReview = require("../models/userReviewModel");
 const queryHelper = require("../utils/queryHelper");
 const ActionType = require("../utils/trails.enum");
 const { createAuditTrail } = require("../utils/helpers");
 
 const createFeedback = asyncHandler(async (req, res) => {
-  const { deskNumber, rating, description } = req.body;
+  const { deskNumber, rating, description, reservation } = req.body;
 
   const actionType = ActionType.FEEDBACK;
   const actionDetails = `submit feedback for Hotdesk #${deskNumber}`;
@@ -36,8 +37,14 @@ const createFeedback = asyncHandler(async (req, res) => {
       rating,
       description: description || null,
       user: user._id,
-      deskNumber
+      deskNumber,
+      reservation,
     });
+
+    await UserReview.findOneAndUpdate(
+      { user: user._id, deskNumber, reservation },
+      { status: "RATED" }
+    );
 
     createAuditTrail(req, {
       actionType,

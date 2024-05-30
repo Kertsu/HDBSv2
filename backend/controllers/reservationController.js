@@ -412,6 +412,7 @@ const getSelfToRateReservations = asyncHandler(async (req, res) => {
     totalDocuments: await UserReview.countDocuments({
       user: req.user.id,
       mode: 0,
+      status: "PENDING",
     }),
   });
 });
