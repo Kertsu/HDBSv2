@@ -2,6 +2,7 @@ const asyncHandler = require("express-async-handler");
 const Feedback = require("../models/feedbackModel");
 const Hotdesk = require("../models/hotdeskModel");
 const UserReview = require("../models/userReviewModel");
+const User = require("../models/userModel");
 const queryHelper = require("../utils/queryHelper");
 const ActionType = require("../utils/trails.enum");
 const { createAuditTrail } = require("../utils/helpers");
@@ -45,6 +46,8 @@ const createFeedback = asyncHandler(async (req, res) => {
       { user: user._id, deskNumber, reservation },
       { status: "RATED" }
     );
+
+    await User.findOneAndUpdate({ user: user._id }, { $inc: { toRate: -1 } });
 
     createAuditTrail(req, {
       actionType,
