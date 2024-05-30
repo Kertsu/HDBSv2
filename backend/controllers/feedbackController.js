@@ -36,6 +36,7 @@ const createFeedback = asyncHandler(async (req, res) => {
       rating,
       description: description || null,
       user: user._id,
+      deskNumber
     });
 
     createAuditTrail(req, {

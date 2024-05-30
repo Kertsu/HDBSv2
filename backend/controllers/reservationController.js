@@ -2,6 +2,7 @@ const asyncHandler = require("express-async-handler");
 const Reservation = require("../models/reservationModel");
 const User = require("../models/userModel");
 const Hotdesk = require("../models/hotdeskModel");
+const UserReview = require("../models/userReviewModel");
 const ReservationHistory = require("../models/reservationHistoryModel");
 const Switch = require("../models/switchModel");
 const queryHelper = require("../utils/queryHelper");
@@ -13,7 +14,7 @@ const dateOptions = {
   year: "numeric",
   month: "long",
   day: "numeric",
-}
+};
 
 const getReservations = asyncHandler(async (req, res) => {
   const reservations = await queryHelper(Reservation, req.query, "reservation");
@@ -163,7 +164,7 @@ const abortReservation = asyncHandler(async (req, res) => {
 });
 
 const getSelfReservations = asyncHandler(async (req, res) => {
-  const userId = req.user.id;
+  req.query.id = req.user.id;
 
   const reservations = await queryHelper(
     Reservation,
@@ -171,13 +172,9 @@ const getSelfReservations = asyncHandler(async (req, res) => {
     "reservations"
   );
 
-  const filteredReservations = reservations.filter((reservation) => {
-    return reservation.user.toString() === userId && reservation.mode === 0;
-  });
-
   res.status(200).json({
     success: true,
-    reservations: filteredReservations,
+    reservations,
     totalDocuments: await Reservation.countDocuments({
       user: req.user.id,
       mode: 0,
@@ -214,15 +211,16 @@ const cancelReservation = asyncHandler(async (req, res) => {
     });
     await reservation.deleteOne();
 
-    const formattedDate = new Date(reservation.date).toLocaleDateString(undefined, dateOptions);
+    const formattedDate = new Date(reservation.date).toLocaleDateString(
+      undefined,
+      dateOptions
+    );
 
     createAuditTrail(req, {
       actionType,
       actionDetails,
       status: "success",
-      additionalContext: `Canceled their reservation on Hotdesk #${
-        reservation.deskNumber
-      } on ${formattedDate}`,
+      additionalContext: `Canceled their reservation on Hotdesk #${reservation.deskNumber} on ${formattedDate}`,
     });
     return res
       .status(200)
@@ -347,10 +345,16 @@ const reserve = asyncHandler(async (req, res) => {
         //     sendReservationApproved(req.user.email, req.user.name, deskNumber)
         //   }
 
-        const formattedDate = new Date(date).toLocaleDateString(undefined, dateOptions);
+        const formattedDate = new Date(date).toLocaleDateString(
+          undefined,
+          dateOptions
+        );
         createAuditTrail(req, {
-          actionType, actionDetails, status: "success", additionalContext: `Reserved for Hotdesk #${deskNumber} on ${formattedDate}`
-        })
+          actionType,
+          actionDetails,
+          status: "success",
+          additionalContext: `Reserved for Hotdesk #${deskNumber} on ${formattedDate}`,
+        });
         return res.status(201).json({ success: true, newReservation });
       } catch (error) {
         console.log("3grd");
@@ -380,21 +384,32 @@ const getHistory = asyncHandler(async (req, res) => {
 });
 
 const getSelfHistory = asyncHandler(async (req, res) => {
+  req.query.id = req.user.id;
   const reservations = await queryHelper(
     ReservationHistory,
     req.query,
     "selfHistory"
   );
 
-  const filteredReservations = reservations.filter(
-    (reservation) =>
-      reservation.user.toString() === req.user.id && reservation.mode === 0
-  );
+  return res.status(200).json({
+    success: true,
+    reservations,
+    totalDocuments: await ReservationHistory.countDocuments({
+      user: req.user.id,
+      mode: 0,
+    }),
+  });
+});
+
+const getSelfToRateReservations = asyncHandler(async (req, res) => {
+  req.query.id = req.user.id;
+
+  const toRateReservations = await queryHelper(UserReview, req.query, "userReview");
 
   return res.status(200).json({
     success: true,
-    reservations: filteredReservations,
-    totalDocuments: await ReservationHistory.countDocuments({
+    toRateReservations,
+    totalDocuments: await UserReview.countDocuments({
       user: req.user.id,
       mode: 0,
     }),
@@ -410,4 +425,5 @@ module.exports = {
   reserve,
   getHistory,
   getSelfHistory,
+  getSelfToRateReservations
 };

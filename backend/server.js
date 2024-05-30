@@ -79,7 +79,7 @@ const addNewUser = (
     description,
     socketId,
   };
-  !connectedUsers.some((user) => user.id === id) && connectedUsers.push(user);
+  !connectedUsers.some((user) => user.id === _id) && connectedUsers.push(user);
   console.log("live", connectedUsers);
   io.emit("connectedUsers", connectedUsers);
 };
