@@ -59,7 +59,7 @@ const expiredReservationHandlerJob = (io, getUser) =>
           mode: reservation.mode,
         });
 
-        await UserReview.create({
+        const userReview = await UserReview.create({
           user: reservation.user,
           deskNumber: reservation.deskNumber,
           reservation: reservation.id,
@@ -75,13 +75,8 @@ const expiredReservationHandlerJob = (io, getUser) =>
         const userId = reservation.user.toString();
         const user = getUser(userId);
 
-        if (user) {
-          io.to(user.socketId).emit("reservation-expired", {
-            reservationId: reservation.id,
-            userId: reservation.user,
-            deskNumber: reservation.deskNumber,
-            message: "Your reservation has ended.",
-          });
+        if (user && userReview) {
+          io.to(user.socketId).emit("reservation-expired", userReview);
         }
       }
     } catch (error) {
