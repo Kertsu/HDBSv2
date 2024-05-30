@@ -5,10 +5,11 @@ const DeskNumber = require("../models/deskNumberModel");
 const Reservation = require("../models/reservationModel");
 const ActionType = require("../utils/trails.enum");
 const { createAuditTrail } = require("../utils/helpers");
+const DeskReport = require("../models/deskReportModel");
 
 const getHotdesks = asyncHandler(async (req, res) => {
   try {
-    console.log(req.query, 'ln9')
+    console.log(req.query, "ln9");
     const desks = await queryHelper(Hotdesk, req.query, "hotdesk");
 
     res.status(200).json({
@@ -38,29 +39,25 @@ const createHotdesk = asyncHandler(async (req, res) => {
   const existingDesk = await Hotdesk.findOne({ deskNumber });
 
   if (!(deskNumber >= 1 && deskNumber <= 80)) {
-    error = "Invalid desk number"
+    error = "Invalid desk number";
     createAuditTrail(req, {
       actionType,
       actionDetails,
       status: "failed",
       additionalContext: error,
     });
-    return res
-      .status(400)
-      .json({ success: false, error  });
+    return res.status(400).json({ success: false, error });
   }
 
   if (existingDesk) {
-    error = "Desk already exists"
+    error = "Desk already exists";
     createAuditTrail(req, {
       actionType,
       actionDetails,
       status: "failed",
       additionalContext: error,
     });
-    return res
-      .status(400)
-      .json({ success: false, error });
+    return res.status(400).json({ success: false, error });
   }
 
   let area;
@@ -171,4 +168,60 @@ const updateHotdesk = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { getHotdesks, createHotdesk, deleteHotdesk, updateHotdesk };
+const submitReport = asyncHandler(async (req, res) => {
+  const { date, selectedDesk, report } = req.body;
+
+  const actionType = ActionType.REPORT;
+  const actionDetails = `submit report`;
+  let error;
+
+  if (!selectedDesk || !report) {
+    error = "Hotdesk and explanation are required";
+    createAuditTrail(req, {
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: error,
+    });
+    return res.status(400).json({
+      success: false,
+      error,
+    });
+  }
+
+  const desk = await Hotdesk.findOne({ deskNumber: selectedDesk.deskNumber });
+
+  try {
+    await DeskReport.create({
+      user: req.user.id,
+      desk: desk._id,
+      deskNumber: selectedDesk.deskNumber,
+      date: new Date(date) || null,
+      report
+    });
+    createAuditTrail(req, {
+      actionType,
+      actionDetails,
+      status: "success",
+      additionalContext: `${req.user.username} filed an issue for ${selectedDesk.title}`,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Report submitted successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: "Internal server error",
+    });
+  }
+});
+
+module.exports = {
+  getHotdesks,
+  createHotdesk,
+  deleteHotdesk,
+  updateHotdesk,
+  submitReport,
+};

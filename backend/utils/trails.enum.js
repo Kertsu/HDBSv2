@@ -4,6 +4,7 @@ const ActionType = {
     LOGIN: 'login',
     LOGOUT: 'logout',
     FEEDBACK: 'feedback',
+    REPORT: 'report',
     RESERVATION: "reservation",
     USER_MANAGEMENT: 'user management',
     RESERVATION_MANAGEMENT: 'reservation management',
