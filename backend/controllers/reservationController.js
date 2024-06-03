@@ -8,7 +8,7 @@ const Switch = require("../models/switchModel");
 const queryHelper = require("../utils/queryHelper");
 const ActionType = require("../utils/trails.enum");
 const { createAuditTrail } = require("../utils/helpers");
-const { sendReservationApproved } = require("../utils/mail.util");
+const { sendReservationApproved, sendSuccessfulReservation } = require("../utils/mail.util");
 
 const dateOptions = {
   weekday: "long",
@@ -342,13 +342,13 @@ const reserve = asyncHandler(async (req, res) => {
           status,
         });
 
-          if (switchConfig.autoAccepting && req.user.receivingEmail){
-            sendReservationApproved({deskNumber, user: req.user},req, res)
-          }
+        if (switchConfig.autoAccepting && req.user.receivingEmail) {
+          sendReservationApproved({ deskNumber, user: req.user }, req, res);
+        }
 
-          if (req.user.receivingEmail && !switchConfig.autoAccepting){
-
-          }
+        if (req.user.receivingEmail && !switchConfig.autoAccepting) {
+          sendSuccessfulReservation({ deskNumber, user: req.user }, req, res);
+        }
 
         const formattedDate = new Date(date).toLocaleDateString(
           undefined,
@@ -409,7 +409,11 @@ const getSelfHistory = asyncHandler(async (req, res) => {
 const getSelfToRateReservations = asyncHandler(async (req, res) => {
   req.query.id = req.user.id;
 
-  const toRateReservations = await queryHelper(UserReview, req.query, "userReview");
+  const toRateReservations = await queryHelper(
+    UserReview,
+    req.query,
+    "userReview"
+  );
 
   return res.status(200).json({
     success: true,
@@ -431,5 +435,5 @@ module.exports = {
   reserve,
   getHistory,
   getSelfHistory,
-  getSelfToRateReservations
+  getSelfToRateReservations,
 };

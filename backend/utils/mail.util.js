@@ -249,14 +249,41 @@ const sendOTP = async (data, req, res) => {
   }
 };
 
-const sendReservationApproved = async (data, req, res) => {
+const sendSuccessfulReservation = async (data, req, res) => {
   let { mailGenerator } = setupTransporterAndMailGen();
   const { deskNumber, user } = data;
- 
+
   var emailMessage = {
     body: {
       name: user.username,
-      intro: `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">We are pleased to inform you that your reservation application for <strong>Desk ${deskNumber}</strong> has been approved. Have a great day ahead!</p>`,
+      intro: `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">We are pleased to inform you that we have received your reservation application for <strong>Desk ${deskNumber}</strong>. If you wish to cancel your reservation, you can find them at the bottom of your <a href="https://desksync-hdbsv2.vercel.app/hdbsv2/profile">profile page</a>.</p>`,
+      outro: `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">Do you need assistance or have any questions? We are here to help. 🙌</p>`,
+    },
+  };
+
+  let mail = mailGenerator.generate(emailMessage);
+
+  let message = {
+    from: process.env.nmEMAIL,
+    to: user.email,
+    subject: "[DeskSync] Successful Reservation",
+    html: mail,
+  };
+
+  try {
+    await sendEmail(message);
+  } catch (error) {
+    return res.status(500).json({ error: "An error occurred." });
+  }
+};
+const sendReservationApproved = async (data, req, res) => {
+  let { mailGenerator } = setupTransporterAndMailGen();
+  const { deskNumber, user } = data;
+
+  var emailMessage = {
+    body: {
+      name: user.username,
+      intro: `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">We are pleased to inform you that your reservation application for <strong>Desk ${deskNumber}</strong> has been approved. If you wish to cancel your reservation, you can find them at the bottom of your <a href="https://desksync-hdbsv2.vercel.app/hdbsv2/profile">profile page</a>. Have a great day ahead!</p>`,
       outro: `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">Do you need assistance or have any questions? We are here to help. 🙌</p>`,
     },
   };
@@ -386,4 +413,5 @@ module.exports = {
   sendPasswordResetSuccess,
   sendOTP,
   sendReservationApproved,
+  sendSuccessfulReservation,
 };
