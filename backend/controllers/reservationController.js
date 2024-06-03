@@ -8,7 +8,12 @@ const Switch = require("../models/switchModel");
 const queryHelper = require("../utils/queryHelper");
 const ActionType = require("../utils/trails.enum");
 const { createAuditTrail } = require("../utils/helpers");
-const { sendReservationApproved, sendSuccessfulReservation } = require("../utils/mail.util");
+const {
+  sendReservationApproved,
+  sendSuccessfulReservation,
+  sendReservationRejected,
+  sendReservationAborted,
+} = require("../utils/mail.util");
 
 const dateOptions = {
   weekday: "long",
@@ -62,13 +67,10 @@ const handleReservation = asyncHandler(async (req, res) => {
   if (action == "approve") {
     reservation.status = "APPROVED";
     await reservation.save();
-    //   @TODO
-    // Send email
-    //   sendReservationApproved(
-    //     user.email,
-    //     user.name,
-    //     updatedReservation.deskNumber
-    //   );
+
+    if (user.receivingEmail) {
+      sendReservationApproved({ deskNumber: reservation.deskNumber, user }, req, res);
+    }
     createAuditTrail(req, {
       actionType,
       actionDetails,
@@ -82,6 +84,9 @@ const handleReservation = asyncHandler(async (req, res) => {
     });
   } else if (action == "reject") {
     await reservation.deleteOne();
+    if (user.receivingEmail) {
+      sendReservationRejected({ deskNumber: reservation.deskNumber, user }, req, res);
+    }
     await ReservationHistory.create({
       reservation: reservation.id,
       user: reservation.user,
@@ -125,6 +130,8 @@ const abortReservation = asyncHandler(async (req, res) => {
   const actionDetails = `abort reservation`;
   let error;
 
+  const user = await User.findById(reservation.user);
+
   if (!reservation) {
     return res
       .status(400)
@@ -143,6 +150,9 @@ const abortReservation = asyncHandler(async (req, res) => {
       mode: reservation.mode,
     });
     await reservation.deleteOne();
+    if (user.receivingEmail) {
+      sendReservationAborted({ deskNumber: reservation.deskNumber, user }, req, res);
+    }
     createAuditTrail(req, {
       actionType,
       actionDetails,
