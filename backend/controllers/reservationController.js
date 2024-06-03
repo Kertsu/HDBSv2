@@ -12,6 +12,7 @@ const {
   sendReservationApproved,
   sendSuccessfulReservation,
   sendReservationRejected,
+  sendReservationAborted,
 } = require("../utils/mail.util");
 
 const dateOptions = {
@@ -129,6 +130,8 @@ const abortReservation = asyncHandler(async (req, res) => {
   const actionDetails = `abort reservation`;
   let error;
 
+  const user = await User.findById(reservation.user);
+
   if (!reservation) {
     return res
       .status(400)
@@ -147,6 +150,9 @@ const abortReservation = asyncHandler(async (req, res) => {
       mode: reservation.mode,
     });
     await reservation.deleteOne();
+    if (user.receivingEmail) {
+      sendReservationAborted({ deskNumber: reservation.deskNumber, user }, req, res);
+    }
     createAuditTrail(req, {
       actionType,
       actionDetails,
