@@ -8,6 +8,7 @@ const Switch = require("../models/switchModel");
 const queryHelper = require("../utils/queryHelper");
 const ActionType = require("../utils/trails.enum");
 const { createAuditTrail } = require("../utils/helpers");
+const { sendReservationApproved } = require("../utils/mail.util");
 
 const dateOptions = {
   weekday: "long",
@@ -341,9 +342,13 @@ const reserve = asyncHandler(async (req, res) => {
           status,
         });
 
-        //   if (switchConfig.autoAccepting){
-        //     sendReservationApproved(req.user.email, req.user.name, deskNumber)
-        //   }
+          if (switchConfig.autoAccepting && req.user.receivingEmail){
+            sendReservationApproved({deskNumber, user: req.user},req, res)
+          }
+
+          if (req.user.receivingEmail && !switchConfig.autoAccepting){
+
+          }
 
         const formattedDate = new Date(date).toLocaleDateString(
           undefined,
