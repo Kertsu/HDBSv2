@@ -11,6 +11,7 @@ const { createAuditTrail } = require("../utils/helpers");
 const {
   sendReservationApproved,
   sendSuccessfulReservation,
+  sendReservationRejected,
 } = require("../utils/mail.util");
 
 const dateOptions = {
@@ -69,13 +70,6 @@ const handleReservation = asyncHandler(async (req, res) => {
     if (user.receivingEmail) {
       sendReservationApproved({ deskNumber: reservation.deskNumber, user }, req, res);
     }
-    //   @TODO
-    // Send email
-    //   sendReservationApproved(
-    //     user.email,
-    //     user.name,
-    //     updatedReservation.deskNumber
-    //   );
     createAuditTrail(req, {
       actionType,
       actionDetails,
@@ -89,6 +83,9 @@ const handleReservation = asyncHandler(async (req, res) => {
     });
   } else if (action == "reject") {
     await reservation.deleteOne();
+    if (user.receivingEmail) {
+      sendReservationRejected({ deskNumber: reservation.deskNumber, user }, req, res);
+    }
     await ReservationHistory.create({
       reservation: reservation.id,
       user: reservation.user,
