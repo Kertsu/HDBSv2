@@ -35,13 +35,13 @@ const sendEmail = async (message) => {
   try {
     let { transporter } = setupTransporterAndMailGen();
     await transporter.sendMail(message);
-    console.log('sent')
+    console.log("sent");
   } catch (error) {
     throw new Error("Error sending email: " + error);
   }
 };
 
-const sendCredentials = async (email, name,req, res) => {
+const sendCredentials = async (email, name, req, res) => {
   const password = generatePassword();
   let { mailGenerator } = setupTransporterAndMailGen();
 
@@ -56,7 +56,6 @@ const sendCredentials = async (email, name,req, res) => {
       <a style="padding: 0.5rem 1.5rem; color: white; background-color:#3b82f6; text-decoration:none; border-radius: 6px; border: 1px solid #3B82F6; width: max-content;display: block;margin-bottom: 1rem !important;" href="https://desksync-hdbsv2.vercel.app" target="_blank">Sign in</a>
       `,
       outro: `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">Do you need assistance or have any questions? We are here to help. 🙌</p>`,
-      
     },
   };
 
@@ -68,7 +67,7 @@ const sendCredentials = async (email, name,req, res) => {
     subject: "[DeskSync] HDBS Credentials",
     html: mail,
   };
-  
+
   await sendEmail(message);
 
   try {
@@ -83,18 +82,22 @@ const sendCredentials = async (email, name,req, res) => {
 
     if (user) {
       createAuditTrail(req, {
-        actionType: "registration", actionDetails: `Registration attempt for ${email}`, status: "success",
-      })
+        actionType: "registration",
+        actionDetails: `Registration attempt for ${email}`,
+        status: "success",
+      });
       return res.status(201).json({
         success: true,
         user,
       });
     } else {
-      const error = "Invalid user data"
+      const error = "Invalid user data";
       res.status(400);
       createAuditTrail(req, {
-        actionType: "registration", actionDetails: `Registration attempt for ${email}`, status: "failed",
-      })
+        actionType: "registration",
+        actionDetails: `Registration attempt for ${email}`,
+        status: "failed",
+      });
       throw new Error(error);
     }
   } catch (error) {
@@ -139,8 +142,11 @@ const sendMagicLink = async (user, req, res) => {
     await user.save();
 
     createAuditTrail(req, {
-      actionType: ActionType.PROFILE_MANAGEMENT, actionDetails:`${user.email} requested for a password reset link`, status: "success", additionalContext: `Password reset link has been sent to ${user.email}`
-    })
+      actionType: ActionType.PROFILE_MANAGEMENT,
+      actionDetails: `${user.email} requested for a password reset link`,
+      status: "success",
+      additionalContext: `Password reset link has been sent to ${user.email}`,
+    });
 
     return res.status(200).json({
       success: true,
@@ -152,7 +158,7 @@ const sendMagicLink = async (user, req, res) => {
   }
 };
 
-const sendPasswordResetSuccess = async (user,req, res) => {
+const sendPasswordResetSuccess = async (user, req, res) => {
   let { mailGenerator } = setupTransporterAndMailGen();
 
   var emailMessage = {
@@ -172,14 +178,17 @@ const sendPasswordResetSuccess = async (user,req, res) => {
     subject: "Password Reset Successfully",
     html: mail,
   };
-  
+
   try {
     await sendEmail(message);
     await user.save();
-    const resMessage = "Password changed"
+    const resMessage = "Password changed";
     createAuditTrail(req, {
-      actionType: "profile management", actionDetails:`reset password`, status: "success", additionalContext: resMessage
-    })
+      actionType: "profile management",
+      actionDetails: `reset password`,
+      status: "success",
+      additionalContext: resMessage,
+    });
     return res.status(200).json({
       success: true,
       message: resMessage,
@@ -191,9 +200,11 @@ const sendPasswordResetSuccess = async (user,req, res) => {
 };
 
 const sendOTP = async (data, req, res) => {
-  const verificationCode = Math.floor(1000000 + Math.random() * 9000).toString();
+  const verificationCode = Math.floor(
+    1000000 + Math.random() * 9000
+  ).toString();
   let { mailGenerator } = setupTransporterAndMailGen();
-  const {name, email} = data
+  const { name, email } = data;
   var emailMessage = {
     body: {
       name,
@@ -206,7 +217,7 @@ const sendOTP = async (data, req, res) => {
     },
   };
 
-  console.log(data)
+  console.log(data);
 
   let mail = mailGenerator.generate(emailMessage);
 
@@ -217,7 +228,7 @@ const sendOTP = async (data, req, res) => {
     html: mail,
   };
 
-    try {
+  try {
     await sendEmail(message);
 
     const salt = await bcrypt.genSalt(10);
@@ -225,16 +236,73 @@ const sendOTP = async (data, req, res) => {
 
     await User.findOneAndUpdate(
       { email: data.email },
-      { verification: {
-        code: hashedVerificationCode,
-        expiresAt: Date.now() + 10 * 60 * 1000,
-      } }
+      {
+        verification: {
+          code: hashedVerificationCode,
+          expiresAt: Date.now() + 10 * 60 * 1000,
+        },
+      }
     );
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: "An error occurred." });
   }
-}
+};
+
+const sendSuccessfulReservation = async (data, req, res) => {
+  let { mailGenerator } = setupTransporterAndMailGen();
+  const { deskNumber, user } = data;
+
+  var emailMessage = {
+    body: {
+      name: user.username,
+      intro: `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">We are pleased to inform you that we have received your reservation application for <strong>Desk ${deskNumber}</strong>. If you wish to cancel your reservation, you can find them at the bottom of your <a href="https://desksync-hdbsv2.vercel.app/hdbsv2/profile">profile page</a>.</p>`,
+      outro: `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">Do you need assistance or have any questions? We are here to help. 🙌</p>`,
+    },
+  };
+
+  let mail = mailGenerator.generate(emailMessage);
+
+  let message = {
+    from: process.env.nmEMAIL,
+    to: user.email,
+    subject: "[DeskSync] Successful Reservation",
+    html: mail,
+  };
+
+  try {
+    await sendEmail(message);
+  } catch (error) {
+    return res.status(500).json({ error: "An error occurred." });
+  }
+};
+const sendReservationApproved = async (data, req, res) => {
+  let { mailGenerator } = setupTransporterAndMailGen();
+  const { deskNumber, user } = data;
+
+  var emailMessage = {
+    body: {
+      name: user.username,
+      intro: `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">We are pleased to inform you that your reservation application for <strong>Desk ${deskNumber}</strong> has been approved. If you wish to cancel your reservation, you can find them at the bottom of your <a href="https://desksync-hdbsv2.vercel.app/hdbsv2/profile">profile page</a>. Have a great day ahead!</p>`,
+      outro: `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">Do you need assistance or have any questions? We are here to help. 🙌</p>`,
+    },
+  };
+
+  let mail = mailGenerator.generate(emailMessage);
+
+  let message = {
+    from: process.env.nmEMAIL,
+    to: user.email,
+    subject: "[DeskSync] Reservation Approved",
+    html: mail,
+  };
+
+  try {
+    await sendEmail(message);
+  } catch (error) {
+    return res.status(500).json({ error: "An error occurred." });
+  }
+};
 
 //
 // const resendVerificationCodeMail = async (email, name, res) => {
@@ -343,5 +411,7 @@ module.exports = {
   sendCredentials,
   sendMagicLink,
   sendPasswordResetSuccess,
-  sendOTP
+  sendOTP,
+  sendReservationApproved,
+  sendSuccessfulReservation,
 };
