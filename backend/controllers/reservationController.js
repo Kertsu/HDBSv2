@@ -8,7 +8,10 @@ const Switch = require("../models/switchModel");
 const queryHelper = require("../utils/queryHelper");
 const ActionType = require("../utils/trails.enum");
 const { createAuditTrail } = require("../utils/helpers");
-const { sendReservationApproved, sendSuccessfulReservation } = require("../utils/mail.util");
+const {
+  sendReservationApproved,
+  sendSuccessfulReservation,
+} = require("../utils/mail.util");
 
 const dateOptions = {
   weekday: "long",
@@ -62,6 +65,10 @@ const handleReservation = asyncHandler(async (req, res) => {
   if (action == "approve") {
     reservation.status = "APPROVED";
     await reservation.save();
+
+    if (user.receivingEmail) {
+      sendReservationApproved({ deskNumber: reservation.deskNumber, user }, req, res);
+    }
     //   @TODO
     // Send email
     //   sendReservationApproved(

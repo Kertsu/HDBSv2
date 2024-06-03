@@ -276,6 +276,7 @@ const sendSuccessfulReservation = async (data, req, res) => {
     return res.status(500).json({ error: "An error occurred." });
   }
 };
+
 const sendReservationApproved = async (data, req, res) => {
   let { mailGenerator } = setupTransporterAndMailGen();
   const { deskNumber, user } = data;
@@ -303,6 +304,10 @@ const sendReservationApproved = async (data, req, res) => {
     return res.status(500).json({ error: "An error occurred." });
   }
 };
+
+const sendReservationRejected = async (data, req, res) => {};
+
+const sendReservationAborted = async (data, req, res) => {};
 
 //
 // const resendVerificationCodeMail = async (email, name, res) => {
@@ -414,4 +419,6 @@ module.exports = {
   sendOTP,
   sendReservationApproved,
   sendSuccessfulReservation,
+  sendReservationRejected,
+  sendReservationAborted,
 };
