@@ -8,7 +8,7 @@ const queryHelper = async (model, userQuery, type) => {
     const parsedFilters = JSON.parse(filters);
     const andConditions = [];
 
-    console.log(filters)
+    console.log(filters);
 
     for (const [key, value] of Object.entries(parsedFilters)) {
       switch (value.matchMode) {
@@ -90,7 +90,9 @@ const queryHelper = async (model, userQuery, type) => {
     if (andConditions.length > 0) {
       query = query.and(andConditions);
     }
-  } else if (mode && type == "reservation") {
+  }
+  
+  if (mode && type == "reservation") {
     query = query.find({ mode });
   }
 
