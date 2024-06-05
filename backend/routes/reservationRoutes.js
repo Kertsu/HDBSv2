@@ -14,7 +14,7 @@ router.delete('/cancel/:id', protect, cancelReservation)
 
 router.post('/reserve', protect, reserve)
 
-router.get('/history', isAdmin, getHistory)
+router.get('/history', canHandleReservation, getHistory)
 
 router.get('/self/history', protect, getSelfHistory )
 

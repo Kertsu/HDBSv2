@@ -1,5 +1,5 @@
 const queryHelper = async (model, userQuery, type) => {
-  const { filters, first, rows, sortField, sortOrder, area, mode, date, id } =
+  const { filters, first, rows, sortField, sortOrder, area, mode, date, id, startDate, endDate } =
     userQuery;
 
   let query = model.find();
@@ -8,7 +8,7 @@ const queryHelper = async (model, userQuery, type) => {
     const parsedFilters = JSON.parse(filters);
     const andConditions = [];
 
-    console.log(filters)
+    console.log(filters);
 
     for (const [key, value] of Object.entries(parsedFilters)) {
       switch (value.matchMode) {
@@ -90,7 +90,9 @@ const queryHelper = async (model, userQuery, type) => {
     if (andConditions.length > 0) {
       query = query.and(andConditions);
     }
-  } else if (mode && type == "reservation") {
+  }
+
+  if (mode && type == "reservation") {
     query = query.find({ mode });
   }
 
@@ -98,7 +100,11 @@ const queryHelper = async (model, userQuery, type) => {
     query = query.find({ user: id });
   }
 
-  if (date && type == "reservation") {
+  if (startDate && endDate && type == "reservation") {
+    query = query.find({
+      date: { $gte: new Date(startDate), $lte: new Date(endDate) },
+    });
+  } else if (date && type == "reservation") {
     query = query.find({ date });
   }
 

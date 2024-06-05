@@ -382,19 +382,17 @@ const reserve = asyncHandler(async (req, res) => {
 });
 
 const getHistory = asyncHandler(async (req, res) => {
+  
   const reservations = await queryHelper(
     ReservationHistory,
     req.query,
     "history"
   );
 
-  const filteredReservations = reservations.filter(
-    (reservation) => reservation.mode == 0
-  );
   return res.status(200).json({
     success: true,
-    reservations: filteredReservations,
-    totalDocuments: await ReservationHistory.countDocuments({ mode: 0 }),
+    reservations: reservations,
+    totalDocuments: await ReservationHistory.countDocuments({ mode: req.query.mode }),
   });
 });
 
