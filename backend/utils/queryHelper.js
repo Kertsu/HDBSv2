@@ -122,6 +122,10 @@ const queryHelper = async (model, userQuery, type) => {
     query = query.sort(sortParams);
   }
 
+  if (type == 'report'){
+    query = query.populate(['user', 'desk'])
+  }
+
   const result = await query.exec();
 
   const formattedResult = result.map((doc) => {

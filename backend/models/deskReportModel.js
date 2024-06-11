@@ -12,10 +12,6 @@ const DeskReportSchema = mongoose.Schema(
       ref: "Hotdesk",
       required: true,
     },
-    deskNumber: {
-      type: Number,
-      required: true,
-    },
     date: {
       type: Date,
     },
