@@ -26,7 +26,6 @@ const generateToken = (id) => {
 const bulkDelete = (model) =>
   asyncHandler(async (req, res) => {
     const ids = req.body.ids;
-    console.log(ids);
 
     const objectIds = ids
       .map((id) => {
@@ -45,7 +44,6 @@ const bulkDelete = (model) =>
 
     try {
       const result = await model.deleteMany({ _id: { $in: objectIds } });
-      console.log("Deletion result:", result);
 
       res
         .status(200)
@@ -87,7 +85,6 @@ const updateAreaProperty = asyncHandler(async () => {
       );
     }
 
-    console.log("Area property updated successfully.");
   } catch (error) {
     console.error("Error updating area property:", error);
   }
@@ -101,11 +98,6 @@ const createAuditTrail = asyncHandler(async (req, data) => {
     req.remoteAddress ||
     req.socket?.remoteAddress ||
     null;
-    console.log('ip', req.ip)
-    console.log('x-forwarded-for', req.headers["x-forwarded-for"])
-    console.log('remoteAddress', req.remoteAddress)
-    console.log('socket.remoteAddress', req.socket.remoteAddress)
-    console.log('ipAddress', ipAddress)
     
   const userId = req.user?._id;
 

@@ -35,7 +35,6 @@ const sendEmail = async (message) => {
   try {
     let { transporter } = setupTransporterAndMailGen();
     await transporter.sendMail(message);
-    console.log("sent");
   } catch (error) {
     throw new Error("Error sending email: " + error);
   }
@@ -216,8 +215,6 @@ const sendOTP = async (data, req, res) => {
       outro: `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">If you did not initiate initiate this request, please change your password immediately.</p>`,
     },
   };
-
-  console.log(data);
 
   let mail = mailGenerator.generate(emailMessage);
 

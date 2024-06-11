@@ -263,9 +263,6 @@ const reserve = asyncHandler(async (req, res) => {
   const currentDate = new Date();
   const selectedDate = new Date(date);
 
-  console.log("currentDate", currentDate);
-  console.log("selectedDate", selectedDate);
-
   if (!date || !startTime || !endTime || !deskNumber || isNaN(selectedDate)) {
     return res.status(400).json({
       success: false,
@@ -282,7 +279,6 @@ const reserve = asyncHandler(async (req, res) => {
     minDate.toISOString().split("T")[0] + "T00:00:00.000Z"
   );
 
-  console.log("reset", minDateReset);
   if (
     (selectedDate < minDateReset || selectedDate > twoWeeksFromToday) &&
     mode !== 1
@@ -372,7 +368,6 @@ const reserve = asyncHandler(async (req, res) => {
         });
         return res.status(201).json({ success: true, newReservation });
       } catch (error) {
-        console.log("3grd");
         return res
           .status(400)
           .json({ success: false, error: "Failed to create a reservation." });

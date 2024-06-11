@@ -18,6 +18,7 @@ const {
   validateResetToken,
   validateOTP,
   resendOTP,
+  updateHasOnboard,
 } = require("../controllers/userController");
 const { protect, isAdmin, canHandleReservation, limiter } = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/multer");
@@ -97,5 +98,7 @@ router.post('/otp/validate', protect, validateOTP)
 
 // Resend OTP
 router.post('/otp/resend', protect, resendOTP)
+
+router.patch('/self/onboard', protect, updateHasOnboard)
 
 module.exports = router;
