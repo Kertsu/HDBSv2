@@ -74,6 +74,10 @@ const userSchema = mongoose.Schema(
     toRate:{
       type: Number,
       default: 0
+    },
+    hasOnboard: {
+      type: Boolean,
+      default: false
     }
   },
   { timestamps: true }

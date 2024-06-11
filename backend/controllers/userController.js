@@ -136,7 +136,6 @@ const authenticate = asyncHandler(async (req, res) => {
     };
 
     const desksyncv2DeviceToken = req.headers["desksyncv2-device-token"];
-    console.log(req.headers["desksyncv2-device-token"], "ln147");
 
     const [deviceToken, hashedDeviceToken] = await generateDeviceToken();
 
@@ -308,8 +307,6 @@ const uploadAvatar = asyncHandler(async (req, res) => {
     return res.status(404).json({ success: false, error: "User not found" });
   }
 
-  console.log(user);
-
   cloudinary.uploader.upload(req.file.path, async (err, result) => {
     if (err) {
       return res.status(500).json({
@@ -338,8 +335,6 @@ const uploadBanner = asyncHandler(async (req, res) => {
   if (!user) {
     return res.status(404).json({ success: false, error: "User not found" });
   }
-
-  console.log(user);
 
   cloudinary.uploader.upload(req.file.path, async (err, result) => {
     if (err) {
@@ -782,7 +777,6 @@ const getUsers = asyncHandler(async (req, res) => {
  * Change password at first login
  */
 const firstChangePassword = asyncHandler(async (req, res) => {
-  console.log(req.user.id);
   const { password, confirmPassword } = req.body;
   const user = await User.findById(req.user.id);
 
@@ -1312,6 +1306,28 @@ const resendOTP = asyncHandler(async (req, res) => {
   })
 })
 
+const updateHasOnboard = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    return res.status(400).json({
+      success: false,
+      error: "User not found",
+    });
+  }
+  try {
+    user.hasOnboard = true;
+    await user.save();
+
+    return res.status(200).json({success: true, user, message: "Tutorial ended"})
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      error: "An error occurred",
+    });
+  }
+})
+
 module.exports = {
   register,
   authenticate,
@@ -1331,5 +1347,6 @@ module.exports = {
   resetPassword,
   validateResetToken,
   validateOTP,
-  resendOTP
+  resendOTP,
+  updateHasOnboard
 };

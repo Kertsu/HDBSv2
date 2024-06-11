@@ -9,7 +9,6 @@ const DeskReport = require("../models/deskReportModel");
 
 const getHotdesks = asyncHandler(async (req, res) => {
   try {
-    console.log(req.query, "ln9");
     const desks = await queryHelper(Hotdesk, req.query, "hotdesk");
 
     res.status(200).json({

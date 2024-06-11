@@ -39,7 +39,6 @@ const io = require("socket.io")(server);
 io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     removeUser(socket.id);
-    console.log("dc", connectedUsers);
   });
 
   socket.on("live", (data) => {
@@ -48,7 +47,6 @@ io.on("connection", (socket) => {
 
   socket.on("die", () => {
     removeUser(socket.id);
-    console.log("die", connectedUsers);
   });
 });
 
@@ -80,7 +78,6 @@ const addNewUser = (
     socketId,
   };
   !connectedUsers.some((user) => user.id === _id) && connectedUsers.push(user);
-  console.log("live", connectedUsers);
   io.emit("connectedUsers", connectedUsers);
 };
 
@@ -90,9 +87,7 @@ const removeUser = (socketId) => {
 };
 
 const getUser = (id) => {
-  console.log('Searching for user with ID:', id);
   const user = connectedUsers.find((user) => user.id == id);
-  console.log('Found user:', user);
   return user
 };
 

@@ -8,8 +8,6 @@ const queryHelper = async (model, userQuery, type) => {
     const parsedFilters = JSON.parse(filters);
     const andConditions = [];
 
-    console.log(filters);
-
     for (const [key, value] of Object.entries(parsedFilters)) {
       switch (value.matchMode) {
         case "contains":

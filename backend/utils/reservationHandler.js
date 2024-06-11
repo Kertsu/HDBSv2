@@ -80,7 +80,6 @@ const expiredReservationHandlerJob = (io, getUser) =>
         }
       }
     } catch (error) {
-      console.log(error);
     }
 
     await Reservation.deleteMany({
