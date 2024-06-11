@@ -397,7 +397,7 @@ const updateSelf = asyncHandler(async (req, res) => {
   const defaultBanner =
     "https://res.cloudinary.com/drlztlr1m/image/upload/v1708332794/memuvo7apu0eqdt4f6mr.svg";
   const defaultAvatar =
-    "http://res.cloudinary.com/drlztlr1m/image/upload/v1706979188/oxbsppubd3rsabqwfxsr.jpg";
+    "https://res.cloudinary.com/drlztlr1m/image/upload/v1706979188/oxbsppubd3rsabqwfxsr.jpg";
 
   if (!user) {
     return res.status(404).json({

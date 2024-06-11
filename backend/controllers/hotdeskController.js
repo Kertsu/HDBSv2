@@ -197,7 +197,7 @@ const submitReport = asyncHandler(async (req, res) => {
       desk: desk._id,
       deskNumber: selectedDesk.deskNumber,
       date: new Date(date) || null,
-      report
+      report,
     });
     createAuditTrail(req, {
       actionType,
@@ -218,10 +218,93 @@ const submitReport = asyncHandler(async (req, res) => {
   }
 });
 
+const getReports = asyncHandler(async (req, res) => {
+  try {
+    const reports = await queryHelper(DeskReport, req.query, "report");
+
+    return res.status(200).json({
+      success: true,
+      reports,
+      totalDocuments: await DeskReport.countDocuments(),
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ success: false, error: "Internal server error" });
+  }
+});
+
+const handleReport = asyncHandler(async (req, res) => {
+  const report = await DeskReport.findById(req.params.id).populate("user");
+  const { action } = req.params;
+
+  const actionType = ActionType.REPORT;
+  const actionDetails = `handle report`;
+  let error;
+
+  if (!report) {
+    error = "Report not found";
+    createAuditTrail(req, {
+      actionType,
+      actionDetails,
+      status: "failed",
+      additionalContext: error,
+    });
+    return res.status(400).json({
+      success: false,
+      error,
+    });
+  }
+
+  try {
+    if (action === "resolve") {
+
+      if (report.status !== 'UNRESOLVED'){
+        error = "The report is already resolved";
+        createAuditTrail(req, {
+          actionType,
+          actionDetails,
+          status: "failed",
+          additionalContext: error,
+        });
+        return res.status(400).json({
+          success: false,
+          error,
+        });
+      }
+
+      report.status = "RESOLVED";
+      await report.save();
+
+      createAuditTrail(req, {
+        actionType,
+        actionDetails,
+        status: "success",
+        additionalContext: `${req.user.username} marked the issue filed by ${report.user.username} as resolved`,
+      });
+
+      return res.status(200).json({
+        success: true,
+        report,
+        message: "Report marked as resolved",
+      });
+    }
+    return res
+    .status(400)
+    .json({ success: false, error: "Invalid action" });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ success: false, error: "Internal server error" });
+  }
+});
+
 module.exports = {
   getHotdesks,
   createHotdesk,
   deleteHotdesk,
   updateHotdesk,
   submitReport,
+  getReports,
+  handleReport
 };
