@@ -97,7 +97,7 @@ const handleReservation = asyncHandler(async (req, res) => {
     }
     await ReservationHistory.create({
       reservation: reservation.id,
-      user: reservation.user,
+      user: reservation.user._id,
       deskNumber: reservation.deskNumber,
       date: reservation.date,
       startTime: reservation.startTime,
@@ -132,13 +132,13 @@ const handleReservation = asyncHandler(async (req, res) => {
 
 const abortReservation = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const reservation = await Reservation.findById(id);
+  const reservation = await Reservation.findById(id).populate('user');
 
   const actionType = ActionType.RESERVATION_MANAGEMENT;
   const actionDetails = `abort reservation`;
   let error;
 
-  const user = await User.findById(reservation.user);
+  const user = await User.findById(reservation.user._id);
 
   if (!reservation) {
     return res
@@ -150,7 +150,7 @@ const abortReservation = asyncHandler(async (req, res) => {
     await ReservationHistory.create({
       reservation: reservation.id,
       deskNumber: reservation.deskNumber,
-      user: reservation.user,
+      user: reservation.user._id,
       date: reservation.date,
       startTime: reservation.startTime,
       endTime: reservation.endTime,
@@ -160,7 +160,7 @@ const abortReservation = asyncHandler(async (req, res) => {
     await reservation.deleteOne();
     if (user.receivingEmail) {
       sendReservationAborted(
-        { deskNumber: reservation.deskNumber, user },
+        { reservation },
         req,
         res
       );
