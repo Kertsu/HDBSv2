@@ -255,9 +255,9 @@ const sendOTP = async (data, req, res) => {
 
 const sendSuccessfulReservation = async (data, req, res) => {
   let { mailGenerator } = setupTransporterAndMailGen();
-  const { newReservation, user } = data;
+  const { reservation } = data;
 
-  const { deskNumber, date, startTime, endTime } = newReservation;
+  const { deskNumber, date, startTime, endTime } = reservation;
 
   const formattedDate = formatDate(date);
   const formattedStartTime = formatTime(startTime);
@@ -283,7 +283,7 @@ const sendSuccessfulReservation = async (data, req, res) => {
 
   var emailMessage = {
     body: {
-      name: user.username,
+      name: reservation.user.username,
       intro: emailBody,
     },
   };
@@ -292,7 +292,7 @@ const sendSuccessfulReservation = async (data, req, res) => {
 
   let message = {
     from: process.env.nmEMAIL,
-    to: user.email,
+    to: reservation.user.email,
     subject: "[DeskSync] Successful Reservation",
     html: mail,
   };
@@ -306,13 +306,30 @@ const sendSuccessfulReservation = async (data, req, res) => {
 
 const sendReservationApproved = async (data, req, res) => {
   let { mailGenerator } = setupTransporterAndMailGen();
-  const { deskNumber, user } = data;
+  const { reservation } = data;
+
+  const { deskNumber, date, startTime, endTime } = reservation;
+
+  const formattedDate = formatDate(date);
+  const formattedStartTime = formatTime(startTime);
+  const formattedEndTime = formatTime(endTime);
+
+  const intro = `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">We are pleased to inform you that your reservation application for <strong>Desk ${deskNumber}</strong> has been approved. If you wish to cancel your reservation, you can find them at the bottom of your <a href="https://desksync-hdbsv2.vercel.app/hdbsv2/profile">profile page</a>. Have a great day ahead!</p>`
+
+  const emailBody = constructEmailBody(
+    intro,
+    constructReservationInfoTable(
+      deskNumber,
+      formattedDate,
+      formattedStartTime,
+      formattedEndTime
+    )
+  );
 
   var emailMessage = {
     body: {
-      name: user.username,
-      intro: `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">We are pleased to inform you that your reservation application for <strong>Desk ${deskNumber}</strong> has been approved. If you wish to cancel your reservation, you can find them at the bottom of your <a href="https://desksync-hdbsv2.vercel.app/hdbsv2/profile">profile page</a>. Have a great day ahead!</p>`,
-      outro: `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">Do you need assistance or have any questions? We are here to help. 🙌</p>`,
+      name: reservation.user.username,
+      intro: emailBody,
     },
   };
 
@@ -320,7 +337,7 @@ const sendReservationApproved = async (data, req, res) => {
 
   let message = {
     from: process.env.nmEMAIL,
-    to: user.email,
+    to: reservation.user.email,
     subject: "[DeskSync] Reservation Approved",
     html: mail,
   };
