@@ -348,16 +348,32 @@ const sendReservationApproved = async (data, req, res) => {
     return res.status(500).json({ error: "An error occurred." });
   }
 };
-
 const sendReservationRejected = async (data, req, res) => {
   let { mailGenerator } = setupTransporterAndMailGen();
-  const { deskNumber, user } = data;
+  const { reservation } = data;
+
+  const { deskNumber, date, startTime, endTime } = reservation;
+
+  const formattedDate = formatDate(date);
+  const formattedStartTime = formatTime(startTime);
+  const formattedEndTime = formatTime(endTime);
+
+  const intro = `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">We are sorry to inform you that your reservation application for <strong>Desk ${deskNumber}</strong> has been rejected. We understand this news may be disappointing, but the decision was made after careful consideration. However, there are many other desks available.</p>`
+
+  const emailBody = constructEmailBody(
+    intro,
+    constructReservationInfoTable(
+      deskNumber,
+      formattedDate,
+      formattedStartTime,
+      formattedEndTime
+    )
+  );
 
   var emailMessage = {
     body: {
-      name: user.username,
-      intro: `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">We are sorry to inform you that your reservation application for <strong>Desk ${deskNumber}</strong> has been rejected. We understand this news may be disappointing, but the decision was made after careful consideration. However, there are many other desks available.</p>`,
-      outro: `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">Do you need assistance or have any questions? We are here to help. 🙌</p>`,
+      name: reservation.user.username,
+      intro: emailBody,
     },
   };
 
@@ -365,7 +381,7 @@ const sendReservationRejected = async (data, req, res) => {
 
   let message = {
     from: process.env.nmEMAIL,
-    to: user.email,
+    to: reservation.user.email,
     subject: "[DeskSync] Reservation Rejected",
     html: mail,
   };
@@ -376,6 +392,7 @@ const sendReservationRejected = async (data, req, res) => {
     return res.status(500).json({ error: "An error occurred." });
   }
 };
+
 
 const sendReservationAborted = async (data, req, res) => {
   let { mailGenerator } = setupTransporterAndMailGen();

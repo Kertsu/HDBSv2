@@ -90,7 +90,7 @@ const handleReservation = asyncHandler(async (req, res) => {
     await reservation.deleteOne();
     if (user.receivingEmail) {
       sendReservationRejected(
-        { deskNumber: reservation.deskNumber, user },
+        { reservation },
         req,
         res
       );
