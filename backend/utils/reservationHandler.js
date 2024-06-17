@@ -3,6 +3,7 @@ const ReservationHistory = require("../models/reservationHistoryModel");
 const UserReview = require("../models/userReviewModel");
 const User = require("../models/userModel");
 const cron = require("node-cron");
+const { sendReservationStarted } = require("./mail.util");
 
 const roundToMillisecond = (date) => {
   const roundedDate = new Date(date);
@@ -15,33 +16,28 @@ const changeToStartedJob = cron.schedule("* * * * *", async () => {
   const isoDate = currentDate.toISOString();
   const formattedDate = isoDate.split("T")[0];
 
-  const reservations = await Reservation.find({
+  const query = {
     status: "APPROVED",
     mode: 0,
     startTime: {
       $gte: `${formattedDate}T00:00:00.000Z`,
       $lt: `${formattedDate}T00:00:20.000Z`,
     },
-  });
+  };
+
+  const reservations = await Reservation.find(query).populate("user");
 
   if (reservations.length > 0) {
     for (const reservation of reservations) {
-      
+      const user = await User.findById(reservation.user._id);
+
+      if (user.receivingEmail) {
+        sendReservationStarted({ reservation });
+      }
     }
   }
 
-  // Change the status of the reservation to STARTED
-  await Reservation.updateMany(
-    {
-      status: "APPROVED",
-      startTime: {
-        $gte: `${formattedDate}T00:00:00.000Z`,
-        $lt: `${formattedDate}T00:00:20.000Z`,
-      },
-      mode: 0,
-    },
-    { status: "STARTED" }
-  );
+  await Reservation.updateMany(query, { status: "STARTED" });
 });
 
 const expiredReservationHandlerJob = (io, getUser) =>
@@ -85,8 +81,7 @@ const expiredReservationHandlerJob = (io, getUser) =>
           io.to(user.socketId).emit("reservation-expired", userReview);
         }
       }
-    } catch (error) {
-    }
+    } catch (error) {}
 
     await Reservation.deleteMany({
       endTime: { $lte: roundToMillisecond(currentDate) },

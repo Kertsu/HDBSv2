@@ -314,7 +314,7 @@ const sendReservationApproved = async (data, req, res) => {
   const formattedStartTime = formatTime(startTime);
   const formattedEndTime = formatTime(endTime);
 
-  const intro = `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">We are pleased to inform you that your reservation application for <strong>Desk ${deskNumber}</strong> has been approved. If you wish to cancel your reservation, you can find them at the bottom of your <a href="https://desksync-hdbsv2.vercel.app/hdbsv2/profile">profile page</a>. Have a great day ahead!</p>`
+  const intro = `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">We are pleased to inform you that your reservation application for <strong>Desk ${deskNumber}</strong> has been approved. If you wish to cancel your reservation, you can find them at the bottom of your <a href="https://desksync-hdbsv2.vercel.app/hdbsv2/profile">profile page</a>. Have a great day ahead!</p>`;
 
   const emailBody = constructEmailBody(
     intro,
@@ -359,7 +359,7 @@ const sendReservationRejected = async (data, req, res) => {
   const formattedStartTime = formatTime(startTime);
   const formattedEndTime = formatTime(endTime);
 
-  const intro = `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">We are sorry to inform you that your reservation application for <strong>Desk ${deskNumber}</strong> has been rejected. We understand this news may be disappointing, but the decision was made after careful consideration. However, there are many other desks available.</p>`
+  const intro = `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">We are sorry to inform you that your reservation application for <strong>Desk ${deskNumber}</strong> has been rejected. We understand this news may be disappointing, but the decision was made after careful consideration. However, there are many other desks available.</p>`;
 
   const emailBody = constructEmailBody(
     intro,
@@ -404,8 +404,7 @@ const sendReservationAborted = async (data, req, res) => {
   const formattedStartTime = formatTime(startTime);
   const formattedEndTime = formatTime(endTime);
 
-  const intro = `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">We are writing to inform you that your reservation application for <strong>Desk ${deskNumber}</strong> has been aborted.</p>`
-
+  const intro = `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">We are writing to inform you that your reservation application for <strong>Desk ${deskNumber}</strong> has been aborted.</p>`;
 
   const emailBody = constructEmailBody(
     intro,
@@ -440,8 +439,50 @@ const sendReservationAborted = async (data, req, res) => {
   }
 };
 
-const sendReservationStarted = async (data, req, res) => {};
+const sendReservationStarted = async (data) => {
+  let { mailGenerator } = setupTransporterAndMailGen();
+  const { reservation } = data;
 
+  const { deskNumber, date, startTime, endTime } = reservation;
+
+  const formattedDate = formatDate(date);
+  const formattedStartTime = formatTime(startTime);
+  const formattedEndTime = formatTime(endTime);
+
+  const intro = `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">We are excited to inform you that your reservation for <strong>Desk ${deskNumber}</strong> has started. Your reserved desk is now ready for you!</p>`;
+
+  const emailBody = constructEmailBody(
+    intro,
+    constructReservationInfoTable(
+      deskNumber,
+      formattedDate,
+      formattedStartTime,
+      formattedEndTime
+    )
+  );
+
+  var emailMessage = {
+    body: {
+      name: reservation.user.username,
+      intro: emailBody,
+    },
+  };
+
+  let mail = mailGenerator.generate(emailMessage);
+
+  let message = {
+    from: process.env.nmEMAIL,
+    to: reservation.user.email,
+    subject: "[DeskSync] Reservation Started",
+    html: mail,
+  };
+
+  try {
+    await sendEmail(message);
+  } catch (error) {
+    console.error("Error sending reservation started email:", error);
+  }
+};
 
 module.exports = {
   sendCredentials,
