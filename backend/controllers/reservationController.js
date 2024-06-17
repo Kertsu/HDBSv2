@@ -353,7 +353,7 @@ const reserve = asyncHandler(async (req, res) => {
         }
 
         if (req.user.receivingEmail && !switchConfig.autoAccepting) {
-          sendSuccessfulReservation({ deskNumber, user: req.user }, req, res);
+          sendSuccessfulReservation({ newReservation, user: req.user }, req, res);
         }
 
         const formattedDate = new Date(date).toLocaleDateString(
