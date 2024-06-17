@@ -3,7 +3,14 @@ const MailGen = require("mailgen");
 const bcrypt = require("bcryptjs");
 const User = require("../models/userModel");
 const crypto = require("crypto");
-const { generatePassword, createAuditTrail, formatDate, formatTime } = require("./helpers");
+const {
+  generatePassword,
+  createAuditTrail,
+  formatDate,
+  formatTime,
+  constructReservationInfoTable,
+  constructEmailBody,
+} = require("./helpers");
 const ActionType = require("./trails.enum");
 
 const setupTransporterAndMailGen = () => {
@@ -256,34 +263,23 @@ const sendSuccessfulReservation = async (data, req, res) => {
   const formattedStartTime = formatTime(startTime);
   const formattedEndTime = formatTime(endTime);
 
-  const emailBody = `
-    <p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">
-      We are pleased to inform you that we have received your reservation application for 
-      <strong>Desk ${deskNumber}</strong>. If you wish to cancel your reservation, you can find them at the bottom of your 
-      <a href="https://desksync-hdbsv2.vercel.app/hdbsv2/profile">profile page</a>.
-    </p>
-    <table style="width: 100%; border-collapse: collapse; margin-bottom: 1rem;">
-      <thead>
-        <tr>
-          <th style="border: 1px solid #24292e; color: #24292e; padding: 8px; text-align: left;">Hotdesk</th>
-          <th style="border: 1px solid #24292e; color: #24292e; padding: 8px; text-align: left;">Date</th>
-          <th style="border: 1px solid #24292e; color: #24292e; padding: 8px; text-align: left;">Start Time</th>
-          <th style="border: 1px solid #24292e; color: #24292e; padding: 8px; text-align: left;">End Time</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td style="border: 1px solid #24292e; color: #24292e; padding: 8px;">Hotdesk #${deskNumber}</td>
-          <td style="border: 1px solid #24292e; color: #24292e; padding: 8px;">${formattedDate}</td>
-          <td style="border: 1px solid #24292e; color: #24292e; padding: 8px;">${formattedStartTime}</td>
-          <td style="border: 1px solid #24292e; color: #24292e; padding: 8px;">${formattedEndTime}</td>
-        </tr>
-      </tbody>
-    </table>
-    <p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">
-      Do you need assistance or have any questions? We are here to help. 🙌
-    </p>
+  const intro = `
+  <p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">
+    We are pleased to inform you that we have received your reservation application for 
+    <strong>Desk ${deskNumber}</strong>. If you wish to cancel your reservation, you can find them at the bottom of your 
+    <a href="https://desksync-hdbsv2.vercel.app/hdbsv2/profile">profile page</a>.
+  </p>
   `;
+
+  const emailBody = constructEmailBody(
+    intro,
+    constructReservationInfoTable(
+      deskNumber,
+      formattedDate,
+      formattedStartTime,
+      formattedEndTime
+    )
+  );
 
   var emailMessage = {
     body: {
@@ -307,7 +303,6 @@ const sendSuccessfulReservation = async (data, req, res) => {
     return res.status(500).json({ error: "An error occurred." });
   }
 };
-
 
 const sendReservationApproved = async (data, req, res) => {
   let { mailGenerator } = setupTransporterAndMailGen();
