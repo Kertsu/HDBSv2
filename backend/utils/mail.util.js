@@ -3,7 +3,14 @@ const MailGen = require("mailgen");
 const bcrypt = require("bcryptjs");
 const User = require("../models/userModel");
 const crypto = require("crypto");
-const { generatePassword, createAuditTrail, formatDate, formatTime } = require("./helpers");
+const {
+  generatePassword,
+  createAuditTrail,
+  formatDate,
+  formatTime,
+  constructReservationInfoTable,
+  constructEmailBody,
+} = require("./helpers");
 const ActionType = require("./trails.enum");
 
 const setupTransporterAndMailGen = () => {
@@ -248,46 +255,35 @@ const sendOTP = async (data, req, res) => {
 
 const sendSuccessfulReservation = async (data, req, res) => {
   let { mailGenerator } = setupTransporterAndMailGen();
-  const { newReservation, user } = data;
+  const { reservation } = data;
 
-  const { deskNumber, date, startTime, endTime } = newReservation;
+  const { deskNumber, date, startTime, endTime } = reservation;
 
   const formattedDate = formatDate(date);
   const formattedStartTime = formatTime(startTime);
   const formattedEndTime = formatTime(endTime);
 
-  const emailBody = `
-    <p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">
-      We are pleased to inform you that we have received your reservation application for 
-      <strong>Desk ${deskNumber}</strong>. If you wish to cancel your reservation, you can find them at the bottom of your 
-      <a href="https://desksync-hdbsv2.vercel.app/hdbsv2/profile">profile page</a>.
-    </p>
-    <table style="width: 100%; border-collapse: collapse; margin-bottom: 1rem;">
-      <thead>
-        <tr>
-          <th style="border: 1px solid #24292e; color: #24292e; padding: 8px; text-align: left;">Hotdesk</th>
-          <th style="border: 1px solid #24292e; color: #24292e; padding: 8px; text-align: left;">Date</th>
-          <th style="border: 1px solid #24292e; color: #24292e; padding: 8px; text-align: left;">Start Time</th>
-          <th style="border: 1px solid #24292e; color: #24292e; padding: 8px; text-align: left;">End Time</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td style="border: 1px solid #24292e; color: #24292e; padding: 8px;">Hotdesk #${deskNumber}</td>
-          <td style="border: 1px solid #24292e; color: #24292e; padding: 8px;">${formattedDate}</td>
-          <td style="border: 1px solid #24292e; color: #24292e; padding: 8px;">${formattedStartTime}</td>
-          <td style="border: 1px solid #24292e; color: #24292e; padding: 8px;">${formattedEndTime}</td>
-        </tr>
-      </tbody>
-    </table>
-    <p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">
-      Do you need assistance or have any questions? We are here to help. 🙌
-    </p>
+  const intro = `
+  <p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">
+    We are pleased to inform you that we have received your reservation application for 
+    <strong>Desk ${deskNumber}</strong>. If you wish to cancel your reservation, you can find them at the bottom of your 
+    <a href="https://desksync-hdbsv2.vercel.app/hdbsv2/profile">profile page</a>.
+  </p>
   `;
+
+  const emailBody = constructEmailBody(
+    intro,
+    constructReservationInfoTable(
+      deskNumber,
+      formattedDate,
+      formattedStartTime,
+      formattedEndTime
+    )
+  );
 
   var emailMessage = {
     body: {
-      name: user.username,
+      name: reservation.user.username,
       intro: emailBody,
     },
   };
@@ -296,7 +292,7 @@ const sendSuccessfulReservation = async (data, req, res) => {
 
   let message = {
     from: process.env.nmEMAIL,
-    to: user.email,
+    to: reservation.user.email,
     subject: "[DeskSync] Successful Reservation",
     html: mail,
   };
@@ -308,16 +304,32 @@ const sendSuccessfulReservation = async (data, req, res) => {
   }
 };
 
-
 const sendReservationApproved = async (data, req, res) => {
   let { mailGenerator } = setupTransporterAndMailGen();
-  const { deskNumber, user } = data;
+  const { reservation } = data;
+
+  const { deskNumber, date, startTime, endTime } = reservation;
+
+  const formattedDate = formatDate(date);
+  const formattedStartTime = formatTime(startTime);
+  const formattedEndTime = formatTime(endTime);
+
+  const intro = `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">We are pleased to inform you that your reservation application for <strong>Desk ${deskNumber}</strong> has been approved. If you wish to cancel your reservation, you can find them at the bottom of your <a href="https://desksync-hdbsv2.vercel.app/hdbsv2/profile">profile page</a>. Have a great day ahead!</p>`;
+
+  const emailBody = constructEmailBody(
+    intro,
+    constructReservationInfoTable(
+      deskNumber,
+      formattedDate,
+      formattedStartTime,
+      formattedEndTime
+    )
+  );
 
   var emailMessage = {
     body: {
-      name: user.username,
-      intro: `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">We are pleased to inform you that your reservation application for <strong>Desk ${deskNumber}</strong> has been approved. If you wish to cancel your reservation, you can find them at the bottom of your <a href="https://desksync-hdbsv2.vercel.app/hdbsv2/profile">profile page</a>. Have a great day ahead!</p>`,
-      outro: `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">Do you need assistance or have any questions? We are here to help. 🙌</p>`,
+      name: reservation.user.username,
+      intro: emailBody,
     },
   };
 
@@ -325,7 +337,7 @@ const sendReservationApproved = async (data, req, res) => {
 
   let message = {
     from: process.env.nmEMAIL,
-    to: user.email,
+    to: reservation.user.email,
     subject: "[DeskSync] Reservation Approved",
     html: mail,
   };
@@ -339,13 +351,30 @@ const sendReservationApproved = async (data, req, res) => {
 
 const sendReservationRejected = async (data, req, res) => {
   let { mailGenerator } = setupTransporterAndMailGen();
-  const { deskNumber, user } = data;
+  const { reservation } = data;
+
+  const { deskNumber, date, startTime, endTime } = reservation;
+
+  const formattedDate = formatDate(date);
+  const formattedStartTime = formatTime(startTime);
+  const formattedEndTime = formatTime(endTime);
+
+  const intro = `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">We are sorry to inform you that your reservation application for <strong>Desk ${deskNumber}</strong> has been rejected. We understand this news may be disappointing, but the decision was made after careful consideration. However, there are many other desks available.</p>`;
+
+  const emailBody = constructEmailBody(
+    intro,
+    constructReservationInfoTable(
+      deskNumber,
+      formattedDate,
+      formattedStartTime,
+      formattedEndTime
+    )
+  );
 
   var emailMessage = {
     body: {
-      name: user.username,
-      intro: `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">We are sorry to inform you that your reservation application for <strong>Desk ${deskNumber}</strong> has been rejected. We understand this news may be disappointing, but the decision was made after careful consideration. However, there are many other desks available.</p>`,
-      outro: `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">Do you need assistance or have any questions? We are here to help. 🙌</p>`,
+      name: reservation.user.username,
+      intro: emailBody,
     },
   };
 
@@ -353,7 +382,7 @@ const sendReservationRejected = async (data, req, res) => {
 
   let message = {
     from: process.env.nmEMAIL,
-    to: user.email,
+    to: reservation.user.email,
     subject: "[DeskSync] Reservation Rejected",
     html: mail,
   };
@@ -367,13 +396,30 @@ const sendReservationRejected = async (data, req, res) => {
 
 const sendReservationAborted = async (data, req, res) => {
   let { mailGenerator } = setupTransporterAndMailGen();
-  const { deskNumber, user } = data;
+  const { reservation } = data;
+
+  const { deskNumber, date, startTime, endTime } = reservation;
+
+  const formattedDate = formatDate(date);
+  const formattedStartTime = formatTime(startTime);
+  const formattedEndTime = formatTime(endTime);
+
+  const intro = `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">We are writing to inform you that your reservation application for <strong>Desk ${deskNumber}</strong> has been aborted.</p>`;
+
+  const emailBody = constructEmailBody(
+    intro,
+    constructReservationInfoTable(
+      deskNumber,
+      formattedDate,
+      formattedStartTime,
+      formattedEndTime
+    )
+  );
 
   var emailMessage = {
     body: {
-      name: user.username,
-      intro: `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">We are writing to inform you that your reservation application for <strong>Desk ${deskNumber}</strong> has been aborted.</p>`,
-      outro: `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">Do you need assistance or have any questions? We are here to help. 🙌</p>`,
+      name: reservation.user.username,
+      intro: emailBody,
     },
   };
 
@@ -381,7 +427,7 @@ const sendReservationAborted = async (data, req, res) => {
 
   let message = {
     from: process.env.nmEMAIL,
-    to: user.email,
+    to: reservation.user.email,
     subject: "[DeskSync] Reservation Aborted",
     html: mail,
   };
@@ -393,7 +439,51 @@ const sendReservationAborted = async (data, req, res) => {
   }
 };
 
-const sendReservationStarted = async (data, req, res) => {};
+const sendReservationStarted = async (data) => {
+  let { mailGenerator } = setupTransporterAndMailGen();
+  const { reservation } = data;
+
+  const { deskNumber, date, startTime, endTime } = reservation;
+
+  const formattedDate = formatDate(date);
+  const formattedStartTime = formatTime(startTime);
+  const formattedEndTime = formatTime(endTime);
+
+  const intro = `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">We are excited to inform you that your reservation for <strong>Desk ${deskNumber}</strong> has started. Your reserved desk is now ready for you!</p>`;
+
+  const emailBody = constructEmailBody(
+    intro,
+    constructReservationInfoTable(
+      deskNumber,
+      formattedDate,
+      formattedStartTime,
+      formattedEndTime
+    )
+  );
+
+  var emailMessage = {
+    body: {
+      name: reservation.user.username,
+      intro: emailBody,
+    },
+  };
+
+  let mail = mailGenerator.generate(emailMessage);
+
+  let message = {
+    from: process.env.nmEMAIL,
+    to: reservation.user.email,
+    subject: "[DeskSync] Reservation Started",
+    html: mail,
+  };
+
+  try {
+    await sendEmail(message);
+  } catch (error) {
+    console.error("Error sending reservation started email:", error);
+  }
+};
+
 module.exports = {
   sendCredentials,
   sendMagicLink,

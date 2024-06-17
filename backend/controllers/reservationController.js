@@ -38,14 +38,14 @@ const handleReservation = asyncHandler(async (req, res) => {
   const actionDetails = `handle reservation`;
   let error;
 
-  const reservation = await Reservation.findById(id);
+  const reservation = await Reservation.findById(id).populate('user');
   if (!reservation) {
     return res.status(400).json({
       success: false,
       error: "Reservation not found",
     });
   }
-  const user = await User.findById(reservation.user);
+  const user = await User.findById(reservation.user._id);
   if (!user) {
     return res.status(400).json({
       success: false,
@@ -69,7 +69,11 @@ const handleReservation = asyncHandler(async (req, res) => {
     await reservation.save();
 
     if (user.receivingEmail) {
-      sendReservationApproved({ deskNumber: reservation.deskNumber, user }, req, res);
+      sendReservationApproved(
+        { reservation },
+        req,
+        res
+      );
     }
     createAuditTrail(req, {
       actionType,
@@ -85,11 +89,15 @@ const handleReservation = asyncHandler(async (req, res) => {
   } else if (action == "reject") {
     await reservation.deleteOne();
     if (user.receivingEmail) {
-      sendReservationRejected({ deskNumber: reservation.deskNumber, user }, req, res);
+      sendReservationRejected(
+        { reservation },
+        req,
+        res
+      );
     }
     await ReservationHistory.create({
       reservation: reservation.id,
-      user: reservation.user,
+      user: reservation.user._id,
       deskNumber: reservation.deskNumber,
       date: reservation.date,
       startTime: reservation.startTime,
@@ -124,13 +132,13 @@ const handleReservation = asyncHandler(async (req, res) => {
 
 const abortReservation = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const reservation = await Reservation.findById(id);
+  const reservation = await Reservation.findById(id).populate('user');
 
   const actionType = ActionType.RESERVATION_MANAGEMENT;
   const actionDetails = `abort reservation`;
   let error;
 
-  const user = await User.findById(reservation.user);
+  const user = await User.findById(reservation.user._id);
 
   if (!reservation) {
     return res
@@ -142,7 +150,7 @@ const abortReservation = asyncHandler(async (req, res) => {
     await ReservationHistory.create({
       reservation: reservation.id,
       deskNumber: reservation.deskNumber,
-      user: reservation.user,
+      user: reservation.user._id,
       date: reservation.date,
       startTime: reservation.startTime,
       endTime: reservation.endTime,
@@ -151,7 +159,11 @@ const abortReservation = asyncHandler(async (req, res) => {
     });
     await reservation.deleteOne();
     if (user.receivingEmail) {
-      sendReservationAborted({ deskNumber: reservation.deskNumber, user }, req, res);
+      sendReservationAborted(
+        { reservation },
+        req,
+        res
+      );
     }
     createAuditTrail(req, {
       actionType,
@@ -348,12 +360,14 @@ const reserve = asyncHandler(async (req, res) => {
           status,
         });
 
+        const reservation = await Reservation.findById(newReservation._id).populate('user');
+
         if (switchConfig.autoAccepting && req.user.receivingEmail) {
-          sendReservationApproved({ deskNumber, user: req.user }, req, res);
+          sendReservationApproved({ reservation }, req, res);
         }
 
         if (req.user.receivingEmail && !switchConfig.autoAccepting) {
-          sendSuccessfulReservation({ newReservation, user: req.user }, req, res);
+          sendSuccessfulReservation({ reservation }, req, res);
         }
 
         const formattedDate = new Date(date).toLocaleDateString(
@@ -377,7 +391,6 @@ const reserve = asyncHandler(async (req, res) => {
 });
 
 const getHistory = asyncHandler(async (req, res) => {
-  
   const reservations = await queryHelper(
     ReservationHistory,
     req.query,
@@ -387,7 +400,9 @@ const getHistory = asyncHandler(async (req, res) => {
   return res.status(200).json({
     success: true,
     reservations: reservations,
-    totalDocuments: await ReservationHistory.countDocuments({ mode: req.query.mode }),
+    totalDocuments: await ReservationHistory.countDocuments({
+      mode: req.query.mode,
+    }),
   });
 });
 

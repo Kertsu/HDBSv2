@@ -2,8 +2,8 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const asyncHandler = require("express-async-handler");
 const AuditTrail = require("../models/auditTrailModel");
-const {v4} = require('uuid');
-const uuidv4 = v4
+const { v4 } = require("uuid");
+const uuidv4 = v4;
 
 const isValidEmail = (email) => {
   const emailRegex = /@(student\.laverdad\.edu\.ph|laverdad\.edu\.ph)$/i;
@@ -84,7 +84,6 @@ const updateAreaProperty = asyncHandler(async () => {
         { multi: true }
       );
     }
-
   } catch (error) {
     console.error("Error updating area property:", error);
   }
@@ -92,13 +91,13 @@ const updateAreaProperty = asyncHandler(async () => {
 
 const createAuditTrail = asyncHandler(async (req, data) => {
   const ipAddress =
-  req.headers["x-forwarded-for"] ||
+    req.headers["x-forwarded-for"] ||
     req.ip ||
     req.headers["true-client-ip"] ||
     req.remoteAddress ||
     req.socket?.remoteAddress ||
     null;
-    
+
   const userId = req.user?._id;
 
   const { email, actionType, actionDetails, status, additionalContext } = data;
@@ -123,23 +122,56 @@ const createAuditTrail = asyncHandler(async (req, data) => {
 });
 
 const generateDeviceToken = async () => {
-  const deviceToken = uuidv4()
+  const deviceToken = uuidv4();
   const hashedDeviceToken = await hashPassword(deviceToken);
 
-  return [deviceToken, hashedDeviceToken]
-}
+  return [deviceToken, hashedDeviceToken];
+};
 
- const formatDate = (dateString) => {
+const formatDate = (dateString) => {
   const date = new Date(dateString);
-  const options = { year: 'numeric', month: 'short', day: 'numeric' };
-  return date.toLocaleDateString('en-US', options);
+  const options = { year: "numeric", month: "short", day: "numeric" };
+  return date.toLocaleDateString("en-US", options);
 };
 
 const formatTime = (timeString) => {
   const date = new Date(timeString);
-  const options = { hour: 'numeric', minute: 'numeric', hour12: true };
-  return date.toLocaleTimeString('en-US', options);
+  const options = { hour: "numeric", minute: "numeric", hour12: true };
+  return date.toLocaleTimeString("en-US", options);
 };
+
+const constructReservationInfoTable = (deskNumber, date, start, end) => {
+  return `
+  <table style="width: 100%; border-collapse: collapse; margin-bottom: 1rem;">
+    <thead>
+      <tr>
+        <th style="border: 1px solid #24292e; color: #24292e; padding: 8px; text-align: left;">Hotdesk</th>
+        <th style="border: 1px solid #24292e; color: #24292e; padding: 8px; text-align: left;">Date</th>
+        <th style="border: 1px solid #24292e; color: #24292e; padding: 8px; text-align: left;">Start Time</th>
+        <th style="border: 1px solid #24292e; color: #24292e; padding: 8px; text-align: left;">End Time</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="border: 1px solid #24292e; color: #24292e; padding: 8px;">Hotdesk #${deskNumber}</td>
+        <td style="border: 1px solid #24292e; color: #24292e; padding: 8px;">${date}</td>
+        <td style="border: 1px solid #24292e; color: #24292e; padding: 8px;">${start}</td>
+        <td style="border: 1px solid #24292e; color: #24292e; padding: 8px;">${end}</td>
+      </tr>
+    </tbody>
+  </table>
+  `;
+};
+
+const constructEmailBody = (intro,body, outro = `<p style="font-size: 14px; color: #24292e; margin-bottom: 1rem !important;">Do you need assistance or have any questions? We are here to help. 🙌</p>` ) => {
+  return `
+  ${intro}
+  ${body}
+  ${outro}
+  `;
+};
+
+ 
 
 module.exports = {
   isValidEmail,
@@ -153,4 +185,6 @@ module.exports = {
   generateDeviceToken,
   formatDate,
   formatTime,
+  constructReservationInfoTable,
+  constructEmailBody
 };
