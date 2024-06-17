@@ -24,6 +24,12 @@ const changeToStartedJob = cron.schedule("* * * * *", async () => {
     },
   });
 
+  if (reservations.length > 0) {
+    for (const reservation of reservations) {
+      
+    }
+  }
+
   // Change the status of the reservation to STARTED
   await Reservation.updateMany(
     {

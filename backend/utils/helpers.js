@@ -129,6 +129,18 @@ const generateDeviceToken = async () => {
   return [deviceToken, hashedDeviceToken]
 }
 
+ const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  const options = { year: 'numeric', month: 'short', day: 'numeric' };
+  return date.toLocaleDateString('en-US', options);
+};
+
+const formatTime = (timeString) => {
+  const date = new Date(timeString);
+  const options = { hour: 'numeric', minute: 'numeric', hour12: true };
+  return date.toLocaleTimeString('en-US', options);
+};
+
 module.exports = {
   isValidEmail,
   hashPassword,
@@ -138,5 +150,7 @@ module.exports = {
   generatePassword,
   updateAreaProperty,
   createAuditTrail,
-  generateDeviceToken
+  generateDeviceToken,
+  formatDate,
+  formatTime,
 };
