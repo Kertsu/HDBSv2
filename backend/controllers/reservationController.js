@@ -38,7 +38,7 @@ const handleReservation = asyncHandler(async (req, res) => {
   const actionDetails = `handle reservation`;
   let error;
 
-  const reservation = await Reservation.findById(id).populate('user');
+  const reservation = await Reservation.findById(id).populate("user");
   if (!reservation) {
     return res.status(400).json({
       success: false,
@@ -69,11 +69,7 @@ const handleReservation = asyncHandler(async (req, res) => {
     await reservation.save();
 
     if (user.receivingEmail) {
-      sendReservationApproved(
-        { reservation },
-        req,
-        res
-      );
+      sendReservationApproved({ reservation }, req, res);
     }
     createAuditTrail(req, {
       actionType,
@@ -89,11 +85,7 @@ const handleReservation = asyncHandler(async (req, res) => {
   } else if (action == "reject") {
     await reservation.deleteOne();
     if (user.receivingEmail) {
-      sendReservationRejected(
-        { reservation },
-        req,
-        res
-      );
+      sendReservationRejected({ reservation }, req, res);
     }
     await ReservationHistory.create({
       reservation: reservation.id,
@@ -132,19 +124,18 @@ const handleReservation = asyncHandler(async (req, res) => {
 
 const abortReservation = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const reservation = await Reservation.findById(id).populate('user');
+  const reservation = await Reservation.findById(id).populate("user");
 
   const actionType = ActionType.RESERVATION_MANAGEMENT;
   const actionDetails = `abort reservation`;
   let error;
-
-  const user = await User.findById(reservation.user._id);
 
   if (!reservation) {
     return res
       .status(400)
       .json({ success: false, error: "Reservation not found" });
   }
+  const user = await User.findById(reservation.user._id);
 
   if (reservation.status !== "PENDING" || reservation.mode === 1) {
     await ReservationHistory.create({
@@ -158,22 +149,33 @@ const abortReservation = asyncHandler(async (req, res) => {
       mode: reservation.mode,
     });
     await reservation.deleteOne();
-    if (user.receivingEmail) {
-      sendReservationAborted(
-        { reservation },
-        req,
-        res
-      );
+
+    let context;
+    let message;
+    switch (reservation.mode) {
+      case 1:
+        context = `Suspension has been lifted by ${req.user.username}`;
+        message = `Suspension has been lifted`
+        break;
+
+      case 0:
+        context = `Reservation has been aborted by ${req.user.username}`;
+        message = `Reservation has been aborted`
+        if (user.receivingEmail) {
+          sendReservationAborted({ reservation });
+        }
+        break;
     }
+
     createAuditTrail(req, {
       actionType,
       actionDetails,
       status: "success",
-      additionalContext: `Reservation has been aborted by ${req.user.username}`,
+      additionalContext: context,
     });
     return res
       .status(200)
-      .json({ success: true, message: `Reservation aborted`, reservation });
+      .json({ success: true, message, reservation });
   } else {
     error = "Invalid request";
     createAuditTrail(req, {
@@ -317,9 +319,19 @@ const reserve = asyncHandler(async (req, res) => {
     deskNumber,
     date,
     status: { $in: ["PENDING", "APPROVED", "STARTED"] },
+    mode: 0,
   });
+  const temporarilyUnavailableHotdesk = await Reservation.findOne({
+    deskNumber,
+    date,
+    status: { $in: ["PENDING", "APPROVED", "STARTED"] },
+    mode: 1,
+  });
+  console.log(reservedHotdesk, "reservedHotdesk");
+  console.log(temporarilyUnavailableHotdesk, "temporarilyUnavailableHotdesk");
+  console.log(existingReservation, "existingReservation");
 
-  if (existingReservation) {
+  if (existingReservation && mode == 0) {
     createAuditTrail(req, {
       actionType,
       actionDetails,
@@ -330,8 +342,26 @@ const reserve = asyncHandler(async (req, res) => {
       success: false,
       error: "You already have a reservation for this date.",
     });
-  } else if (reservedHotdesk || desk.status === "UNAVAILABLE") {
-    error = "Hotdesk is unavailable";
+  } else if (
+    reservedHotdesk ||
+    desk.status === "UNAVAILABLE" ||
+    temporarilyUnavailableHotdesk
+  ) {
+    if (reservedHotdesk) {
+      error = "Hotdesk is already reserved";
+    }
+
+    if (temporarilyUnavailableHotdesk && mode == 1) {
+      error = "Hotdesk is already temporarily unavailable";
+    }
+
+    if (reservedHotdesk && mode === 1) {
+      error = "Existing reservation for this date";
+    }
+
+    if (desk.status === "UNAVAILABLE") {
+      error = "Hotdesk is unavailable";
+    }
     createAuditTrail(req, {
       actionType,
       actionDetails,
@@ -360,13 +390,23 @@ const reserve = asyncHandler(async (req, res) => {
           status,
         });
 
-        const reservation = await Reservation.findById(newReservation._id).populate('user');
+        const reservation = await Reservation.findById(
+          newReservation._id
+        ).populate("user");
 
-        if (switchConfig.autoAccepting && req.user.receivingEmail) {
+        if (
+          switchConfig.autoAccepting &&
+          req.user.receivingEmail &&
+          mode == 0
+        ) {
           sendReservationApproved({ reservation }, req, res);
         }
 
-        if (req.user.receivingEmail && !switchConfig.autoAccepting) {
+        if (
+          req.user.receivingEmail &&
+          !switchConfig.autoAccepting &&
+          mode == 0
+        ) {
           sendSuccessfulReservation({ reservation }, req, res);
         }
 

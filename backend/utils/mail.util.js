@@ -394,7 +394,7 @@ const sendReservationRejected = async (data, req, res) => {
   }
 };
 
-const sendReservationAborted = async (data, req, res) => {
+const sendReservationAborted = async (data) => {
   let { mailGenerator } = setupTransporterAndMailGen();
   const { reservation } = data;
 
@@ -435,7 +435,7 @@ const sendReservationAborted = async (data, req, res) => {
   try {
     await sendEmail(message);
   } catch (error) {
-    return res.status(500).json({ error: "An error occurred." });
+    console.error(error);
   }
 };
 
