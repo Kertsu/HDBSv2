@@ -791,18 +791,18 @@ const firstChangePassword = asyncHandler(async (req, res) => {
     });
   }
 
-  if (user.passwordChangedAt !== null) {
-    createAuditTrail(req, {
-      actionType,
-      actionDetails,
-      status: "failed",
-      additionalContext: "Password already changed",
-    });
-    return res.status(400).json({
-      success: false,
-      error: "Invalid action",
-    });
-  }
+  // if (user.passwordChangedAt !== null) {
+  //   createAuditTrail(req, {
+  //     actionType,
+  //     actionDetails,
+  //     status: "failed",
+  //     additionalContext: "Password already changed",
+  //   });
+  //   return res.status(400).json({
+  //     success: false,
+  //     error: "Invalid action",
+  //   });
+  // }
 
   if (password !== confirmPassword) {
     error = "Passwords did not match";
