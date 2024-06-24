@@ -128,16 +128,16 @@ const generateDeviceToken = async () => {
   return [deviceToken, hashedDeviceToken];
 };
 
-const formatDate = (dateString) => {
-  const date = new Date(dateString);
-  const options = { year: "numeric", month: "short", day: "numeric" };
-  return date.toLocaleDateString("en-US", options);
-};
-
 const formatTime = (timeString) => {
   const date = new Date(timeString);
-  const options = { hour: "numeric", minute: "numeric", hour12: true };
+  const options = { hour: "numeric", minute: "numeric", hour12: true, timeZone: "Asia/Singapore" };
   return date.toLocaleTimeString("en-US", options);
+};
+
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  const options = { year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Singapore" };
+  return date.toLocaleDateString("en-US", options);
 };
 
 const constructReservationInfoTable = (deskNumber, date, start, end) => {
