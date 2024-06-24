@@ -194,7 +194,7 @@ const getSelfReservations = asyncHandler(async (req, res) => {
   const reservations = await queryHelper(
     Reservation,
     req.query,
-    "reservations"
+    "reservation"
   );
 
   res.status(200).json({
