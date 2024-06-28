@@ -24,11 +24,11 @@ const userSchema = mongoose.Schema(
     },
     passwordResetToken: {
       token: {
-        type: String
+        type: String,
       },
       expiresAt: {
-        type: Date
-      }
+        type: Date,
+      },
     },
     avatar: {
       type: String,
@@ -37,50 +37,59 @@ const userSchema = mongoose.Schema(
     },
     banner: {
       type: String,
-      default: "https://res.cloudinary.com/drlztlr1m/image/upload/v1713796393/bb2cvwoyx71um5cp9cxn.jpg"
+      default:
+        "https://res.cloudinary.com/drlztlr1m/image/upload/v1713796393/bb2cvwoyx71um5cp9cxn.jpg",
     },
     isDisabled: {
       type: Number,
       default: 0,
-      enum: [0,1]
+      enum: [0, 1],
     },
     role: {
       type: String,
       default: "user",
       enum: ["user", "admin", "om", "superadmin"],
     },
-    passwordChangedAt:{
-      type: Date, 
-      default: null
+    passwordChangedAt: {
+      type: Date,
+      default: null,
     },
     verification: {
       code: {
-        type: String, 
-        default: null
+        type: String,
+        default: null,
       },
-      expiresAt:{
-        type: Date, 
-        default: null
-      }
+      expiresAt: {
+        type: Date,
+        default: null,
+      },
     },
-    registeredDeviceToken:{
-      type: String, 
+    registeredDeviceToken: {
+      type: String,
       default: null,
     },
-    otpRequired:{
+    otpRequired: {
       type: Boolean,
-      default: false
+      default: false,
     },
-    toRate:{
+    toRate: {
       type: Number,
-      default: 0
+      default: 0,
     },
     hasOnboard: {
       type: Boolean,
-      default: false
-    }
+      default: false,
+    },
   },
   { timestamps: true }
 );
+
+userSchema.statics.deleteUserWithCascade = async function (userId) {
+  const user = await this.findById(userId);
+  if (user) {
+    await mongoose.model("Reservation").deleteMany({ user: userId });
+    await user.deleteOne();
+  }
+};
 
 module.exports = mongoose.model("User", userSchema);

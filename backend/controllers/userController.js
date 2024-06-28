@@ -142,17 +142,17 @@ const authenticate = asyncHandler(async (req, res) => {
     /**
      * @todo delete after presentation
      */
-    if (user.email === 'hdbs.desksync@gmail.com'){
+    if (user.email === "hdbs.desksync@gmail.com") {
       createAuditTrail(req, {
         email,
         actionType,
         actionDetails,
         status: "success",
       });
-  
+
       user.otpRequired = false;
       await user.save();
-  
+
       return res.status(200).json({
         success: true,
         user: userData,
@@ -287,13 +287,13 @@ const deleteUser = asyncHandler(async (req, res) => {
     userToDelete.role !== "admin" &&
     userToDelete.role !== "superadmin"
   ) {
-    deletedUser = await User.findByIdAndDelete(req.params.id);
+    await User.deleteUserWithCascade(req.params.id)
     createAuditTrail(req, {
       actionType,
       actionDetails,
       status: "success",
     });
-    return res.status(200).json({ success: true, deletedUser });
+    return res.status(200).json({ success: true, deletedUser: userToDelete });
   } else if (
     requestingUser.role === "superadmin" &&
     userToDelete.role !== "superadmin"
@@ -303,8 +303,8 @@ const deleteUser = asyncHandler(async (req, res) => {
       actionDetails,
       status: "success",
     });
-    deletedUser = await User.findByIdAndDelete(req.params.id);
-    return res.status(200).json({ success: true, deletedUser });
+    await User.deleteUserWithCascade(req.params.id)
+    return res.status(200).json({ success: true, deletedUser: userToDelete });
   } else {
     const error = "Permission denied";
     createAuditTrail(req, {
@@ -1259,7 +1259,8 @@ const validateOTP = asyncHandler(async (req, res) => {
     });
   }
 
-  const otpValid = user.verification && 
+  const otpValid =
+    user.verification &&
     (await bcrypt.compare(otp, user.verification.code)) &&
     user.verification.expiresAt > Date.now();
   if (!otpValid) {
@@ -1280,8 +1281,7 @@ const validateOTP = asyncHandler(async (req, res) => {
   user.otpRequired = false;
   await user.save();
 
-
-  const message = "Verification successful"
+  const message = "Verification successful";
   createAuditTrail(req, {
     actionType,
     actionDetails,
@@ -1319,12 +1319,13 @@ const resendOTP = asyncHandler(async (req, res) => {
     status: "success",
     additionalContext: `OTP sent successfully to ${user.email}`,
   });
-  
+
   return res.status(200).json({
     success: true,
-    message: " OTP has been sent successfully. Please check your email for the code.",
-  })
-})
+    message:
+      " OTP has been sent successfully. Please check your email for the code.",
+  });
+});
 
 const updateHasOnboard = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
@@ -1339,14 +1340,16 @@ const updateHasOnboard = asyncHandler(async (req, res) => {
     user.hasOnboard = true;
     await user.save();
 
-    return res.status(200).json({success: true, user, message: "Tutorial ended"})
+    return res
+      .status(200)
+      .json({ success: true, user, message: "Tutorial ended" });
   } catch (error) {
     return res.status(400).json({
       success: false,
       error: "An error occurred",
     });
   }
-})
+});
 
 module.exports = {
   register,
@@ -1368,5 +1371,5 @@ module.exports = {
   validateResetToken,
   validateOTP,
   resendOTP,
-  updateHasOnboard
+  updateHasOnboard,
 };
